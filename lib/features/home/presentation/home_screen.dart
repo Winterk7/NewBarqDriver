@@ -58,10 +58,6 @@ class _HomeScreenState extends State<HomeScreen>
   // Bottom sheet animation
   late final AnimationController _sheetCtrl;
   late final Animation<Offset> _sheetSlide;
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  // Incoming order pop-up mock
-  bool _showIncomingOrder = false;
 
   @override
   void initState() {
@@ -91,46 +87,10 @@ class _HomeScreenState extends State<HomeScreen>
           ? _DriverStatus.online
           : _DriverStatus.offline;
       _activeOrder = null;
-      _showIncomingOrder = false;
     });
     _sheetCtrl
       ..reset()
       ..forward();
-
-    // Simulate receiving an order after going online
-    if (_status == _DriverStatus.online) {
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted && _status == _DriverStatus.online) {
-          setState(() => _showIncomingOrder = true);
-        }
-      });
-    }
-  }
-
-  void _acceptOrder() {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _showIncomingOrder = false;
-      _status = _DriverStatus.onDelivery;
-      _activeOrder = const _ActiveOrder(
-        id: '#ORD-4821',
-        customerName: 'Ahmad Al-Rashid',
-        pickupAddress: 'Burger Lab – King Fahd Rd',
-        dropoffAddress: '3rd Floor, Olaya Tower, Riyadh',
-        storeName: 'Burger Lab',
-        earnings: 18.50,
-        distanceKm: 4.2,
-        estimatedMins: 14,
-      );
-    });
-    _sheetCtrl
-      ..reset()
-      ..forward();
-  }
-
-  void _declineOrder() {
-    HapticFeedback.lightImpact();
-    setState(() => _showIncomingOrder = false);
   }
 
   void _completeDelivery() {
@@ -142,11 +102,15 @@ class _HomeScreenState extends State<HomeScreen>
     _sheetCtrl
       ..reset()
       ..forward();
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted && _status == _DriverStatus.online) {
-        setState(() => _showIncomingOrder = true);
-      }
-    });
+  }
+
+  void _showMenuSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _MenuSheet(status: _status),
+    );
   }
 
   // ── Map tile style: dark when online, light when offline ─────────────────
@@ -168,9 +132,7 @@ class _HomeScreenState extends State<HomeScreen>
             _status == _DriverStatus.offline ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
-        key: _scaffoldKey,
         backgroundColor: Colors.black,
-        endDrawer: _DriverDrawer(status: _status),
         body: Stack(
           children: [
             // ── MAP ─────────────────────────────────────────────────────
@@ -222,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen>
                   // Menu
                   _MapIconButton(
                     icon: Icons.menu_rounded,
-                    onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
+                    onTap: () => _showMenuSheet(context),
                     dark: _status != _DriverStatus.offline,
                   ),
                 ],
@@ -254,14 +216,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
 
-            // ── INCOMING ORDER OVERLAY ────────────────────────────────────
-            if (_showIncomingOrder)
-              Positioned.fill(
-                child: _IncomingOrderOverlay(
-                  onAccept: _acceptOrder,
-                  onDecline: _declineOrder,
-                ),
-              ),
+
           ],
         ),
       ),
@@ -484,6 +439,8 @@ class _OfflineSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDimens.xl,
@@ -491,13 +448,17 @@ class _OfflineSheet extends StatelessWidget {
         AppDimens.xl,
         bottomPad + AppDimens.lg,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppDimens.radiusLg),
         ),
         boxShadow: [
-          BoxShadow(color: Color(0x1A000000), blurRadius: 24, offset: Offset(0, -4)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, -4),
+          ),
         ],
       ),
       child: Column(
@@ -510,43 +471,47 @@ class _OfflineSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.dividerLight,
+                color: cs.onSurface.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppDimens.radiusFull),
               ),
             ),
           ),
           const SizedBox(height: AppDimens.lg),
 
-          const Text(
+          Text(
             "You're offline",
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimaryLight,
+              color: cs.onSurface,
               letterSpacing: -0.6,
             ),
           ),
           const SizedBox(height: AppDimens.xs),
-          const Text(
+          Text(
             'Go online to start accepting delivery requests',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
-              color: AppColors.textSecondaryLight,
+              color: cs.onSurface.withValues(alpha: 0.55),
             ),
           ),
           const SizedBox(height: AppDimens.xl),
 
-          // Go Online button
+          // Go Online button — dark/neutral (not green)
           SizedBox(
             width: double.infinity,
             height: AppDimens.buttonHeight,
             child: ElevatedButton(
               onPressed: onGoOnline,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
+                backgroundColor: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.backgroundDark,
+                foregroundColor: isDark
+                    ? AppColors.backgroundDark
+                    : AppColors.textPrimaryDark,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
@@ -779,215 +744,49 @@ class _DeliverySheet extends StatelessWidget {
   }
 }
 
-// ── Incoming order overlay ─────────────────────────────────────────────────────
 
-class _IncomingOrderOverlay extends StatelessWidget {
-  final VoidCallback onAccept;
-  final VoidCallback onDecline;
-  const _IncomingOrderOverlay({required this.onAccept, required this.onDecline});
+// ── Menu bottom sheet ───────────────────────────────────────────────────────
+
+class _MenuSheet extends StatelessWidget {
+  final _DriverStatus status;
+  const _MenuSheet({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final cs = Theme.of(context).colorScheme;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
     return Container(
-      color: Colors.black.withValues(alpha: 0.55),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(
-            AppDimens.base,
-            0,
-            AppDimens.base,
-            AppDimens.base,
-          ),
-          padding: EdgeInsets.fromLTRB(
-            AppDimens.xl,
-            AppDimens.xl,
-            AppDimens.xl,
-            bottom + AppDimens.xl,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundDark,
-            borderRadius: BorderRadius.circular(AppDimens.radiusLg),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryGreen.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppDimens.radiusSm),
-                    ),
-                    child: const Icon(
-                      Icons.delivery_dining_rounded,
-                      color: AppColors.primaryGreen,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.md),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'New Order',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      Text(
-                        'Burger Lab – King Fahd Rd',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          color: AppColors.textSecondaryDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'LYD 18.50',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryGreen,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      Text(
-                        '4.2 km · 14 min',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          color:
-                              AppColors.textSecondaryDark.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: AppDimens.lg),
-
-              // Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: AppDimens.buttonHeight,
-                      child: OutlinedButton(
-                        onPressed: onDecline,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondaryDark,
-                          side: const BorderSide(color: AppColors.dividerDark),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppDimens.radiusMd),
-                          ),
-                        ),
-                        child: const Text(
-                          'Decline',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppDimens.md),
-                  Expanded(
-                    flex: 2,
-                    child: SizedBox(
-                      height: AppDimens.buttonHeight,
-                      child: ElevatedButton(
-                        onPressed: onAccept,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryGreen,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppDimens.radiusMd),
-                          ),
-                        ),
-                        child: const Text(
-                          'Accept',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppDimens.radiusXl),
         ),
       ),
-    );
-  }
-}
-
-// ── Driver side drawer ────────────────────────────────────────────────────────
-
-class _DriverDrawer extends StatelessWidget {
-  final _DriverStatus status;
-  const _DriverDrawer({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-    final bottomPad = MediaQuery.paddingOf(context).bottom;
-
-    return Drawer(
-      width: MediaQuery.sizeOf(context).width * 0.78,
-      backgroundColor: AppColors.backgroundDark,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(left: Radius.circular(20)),
-      ),
+      padding: EdgeInsets.fromLTRB(0, AppDimens.sm, 0, bottomPad + AppDimens.base),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Profile header ───────────────────────────────────────────
-          Container(
-            padding: EdgeInsets.fromLTRB(
-                AppDimens.xl, topPad + AppDimens.xl, AppDimens.xl, AppDimens.xl),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
-              border: Border(
-                bottom: BorderSide(color: AppColors.dividerDark),
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: AppDimens.md),
+              decoration: BoxDecoration(
+                color: cs.onSurface.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppDimens.radiusFull),
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.xl,
+              vertical: AppDimens.md,
             ),
             child: Row(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 48,
+                  height: 48,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [AppColors.primaryGreen, AppColors.primaryGreenDark],
@@ -1001,7 +800,7 @@ class _DriverDrawer extends StatelessWidget {
                       'D',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),
@@ -1009,39 +808,39 @@ class _DriverDrawer extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppDimens.md),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Driver',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimaryDark,
-                        ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Driver',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Barq Delivery',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          color: AppColors.textSecondaryDark,
-                        ),
+                    ),
+                    Text(
+                      'Barq Delivery',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        color: cs.onSurface.withValues(alpha: 0.5),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                // Status indicator
+                const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppDimens.sm,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.15),
+                    color: (status == _DriverStatus.offline
+                            ? cs.onSurface
+                            : AppColors.primaryGreen)
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppDimens.radiusFull),
                   ),
                   child: Text(
@@ -1051,7 +850,7 @@ class _DriverDrawer extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: status == _DriverStatus.offline
-                          ? AppColors.textSecondaryDark
+                          ? cs.onSurface.withValues(alpha: 0.5)
                           : AppColors.primaryGreen,
                     ),
                   ),
@@ -1059,70 +858,38 @@ class _DriverDrawer extends StatelessWidget {
               ],
             ),
           ),
-
-          // ── Today's earnings ─────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.all(AppDimens.xl),
-            child: Container(
-              padding: const EdgeInsets.all(AppDimens.base),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceDark,
-                borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _DrawerStat(label: "Today's earnings", value: 'LYD 0.00'),
-                  Container(width: 1, height: 32, color: AppColors.dividerDark),
-                  _DrawerStat(label: 'Deliveries', value: '0'),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Nav items ────────────────────────────────────────────────
-          _DrawerItem(
+          Divider(color: cs.onSurface.withValues(alpha: 0.08), height: 1),
+          _MenuItem(
             icon: Icons.history_rounded,
             label: 'Delivery History',
             onTap: () => Navigator.pop(context),
           ),
-          _DrawerItem(
+          _MenuItem(
             icon: Icons.account_balance_wallet_outlined,
             label: 'Wallet & Earnings',
             onTap: () => Navigator.pop(context),
           ),
-          _DrawerItem(
+          _MenuItem(
             icon: Icons.star_outline_rounded,
             label: 'My Rating',
             onTap: () => Navigator.pop(context),
           ),
-          _DrawerItem(
+          _MenuItem(
             icon: Icons.support_agent_outlined,
             label: 'Support',
             onTap: () => Navigator.pop(context),
           ),
-          _DrawerItem(
+          _MenuItem(
             icon: Icons.settings_outlined,
             label: 'Settings',
             onTap: () => Navigator.pop(context),
           ),
-
-          const Spacer(),
-
-          // ── Logout ───────────────────────────────────────────────────
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppDimens.xl,
-              0,
-              AppDimens.xl,
-              bottomPad + AppDimens.xl,
-            ),
-            child: _DrawerItem(
-              icon: Icons.logout_rounded,
-              label: 'Sign Out',
-              color: AppColors.error,
-              onTap: () => Navigator.pop(context),
-            ),
+          Divider(color: cs.onSurface.withValues(alpha: 0.08), height: 1),
+          _MenuItem(
+            icon: Icons.logout_rounded,
+            label: 'Sign Out',
+            color: AppColors.error,
+            onTap: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -1130,45 +897,12 @@ class _DriverDrawer extends StatelessWidget {
   }
 }
 
-class _DrawerStat extends StatelessWidget {
-  final String label;
-  final String value;
-  const _DrawerStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimaryDark,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11,
-            color: AppColors.textSecondaryDark,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DrawerItem extends StatelessWidget {
+class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color? color;
   final VoidCallback onTap;
-  const _DrawerItem({
+  const _MenuItem({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -1177,90 +911,47 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? AppColors.textPrimaryDark;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: AppColors.dividerDark,
-        highlightColor: AppColors.surfaceDark,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.xl,
-            vertical: AppDimens.md,
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: c.withValues(alpha: 0.8)),
-              const SizedBox(width: AppDimens.md),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: c,
-                ),
+    final cs = Theme.of(context).colorScheme;
+    final c = color ?? cs.onSurface;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.xl,
+          vertical: AppDimens.md,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: c.withValues(alpha: color != null ? 1.0 : 0.7),
+            ),
+            const SizedBox(width: AppDimens.md),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: c,
               ),
-              const Spacer(),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: AppColors.textSecondaryDark.withValues(alpha: 0.5),
-              ),
-            ],
-          ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: cs.onSurface.withValues(alpha: 0.3),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Reusable small widgets ────────────────────────────────────────────────────
+// ── Reusable small widgets ───────────────────────────────────────────────────
 
-class _PulsingDot extends StatefulWidget {
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scale,
-      child: Container(
-        width: 10,
-        height: 10,
-        decoration: const BoxDecoration(
-          color: AppColors.primaryGreen,
-          shape: BoxShape.circle,
-        ),
-      ),
-    );
-  }
-}
 
 class _RouteRow extends StatelessWidget {
   final String pickupLabel;
