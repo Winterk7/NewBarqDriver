@@ -1,4 +1,6 @@
 import 'package:barq_driver/core/config/secrets.dart';
+import 'package:barq_driver/core/theme/theme_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:flutter/material.dart';
@@ -39,14 +41,14 @@ class _ActiveOrder {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   // Default centre: Riyadh, SA
   static const _defaultCenter = LatLng(24.7136, 46.6753);
@@ -105,11 +107,21 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showMenuSheet(BuildContext context) {
+    final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _MenuSheet(status: _status),
+      builder: (_) => _MenuSheet(
+        status: _status,
+        isDarkMode: isDark,
+        onToggleTheme: () {
+          HapticFeedback.lightImpact();
+          final cur = ref.read(themeModeProvider);
+          ref.read(themeModeProvider.notifier).state =
+              cur == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+        },
+      ),
     );
   }
 
@@ -180,6 +192,20 @@ class _HomeScreenState extends State<HomeScreen>
                   // Earnings chip
                   if (_status != _DriverStatus.offline)
                     _EarningsChip(amount: _activeOrder?.earnings ?? 0),
+                  const SizedBox(width: AppDimens.sm),
+                  // Theme toggle
+                  _MapIconButton(
+                    icon: ref.watch(themeModeProvider) == ThemeMode.dark
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      final cur = ref.read(themeModeProvider);
+                      ref.read(themeModeProvider.notifier).state =
+                          cur == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+                    },
+                    dark: _status != _DriverStatus.offline,
+                  ),
                   const SizedBox(width: AppDimens.sm),
                   // Menu
                   _MapIconButton(
@@ -745,203 +771,135 @@ class _DeliverySheet extends StatelessWidget {
 }
 
 
-// ── Menu bottom sheet ───────────────────────────────────────────────────────
+// ── Menu bottom sheet ────────────────────────────────────────────────────────
 
 class _MenuSheet extends StatelessWidget {
   final _DriverStatus status;
-  const _MenuSheet({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final bottomPad = MediaQuery.paddingOf(context).bottom;
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppDimens.radiusXl),
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(0, AppDimens.sm, 0, bottomPad + AppDimens.base),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: AppDimens.md),
-              decoration: BoxDecoration(
-                color: cs.onSurface.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimens.xl,
-              vertical: AppDimens.md,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primaryGreen, AppColors.primaryGreenDark],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'D',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppDimens.md),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Driver',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: cs.onSurface,
-                      ),
-                    ),
-                    Text(
-                      'Barq Delivery',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        color: cs.onSurface.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.sm,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: (status == _DriverStatus.offline
-                            ? cs.onSurface
-                            : AppColors.primaryGreen)
-                        .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-                  ),
-                  child: Text(
-                    status == _DriverStatus.offline ? 'Offline' : 'Online',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: status == _DriverStatus.offline
-                          ? cs.onSurface.withValues(alpha: 0.5)
-                          : AppColors.primaryGreen,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(color: cs.onSurface.withValues(alpha: 0.08), height: 1),
-          _MenuItem(
-            icon: Icons.history_rounded,
-            label: 'Delivery History',
-            onTap: () => Navigator.pop(context),
-          ),
-          _MenuItem(
-            icon: Icons.account_balance_wallet_outlined,
-            label: 'Wallet & Earnings',
-            onTap: () => Navigator.pop(context),
-          ),
-          _MenuItem(
-            icon: Icons.star_outline_rounded,
-            label: 'My Rating',
-            onTap: () => Navigator.pop(context),
-          ),
-          _MenuItem(
-            icon: Icons.support_agent_outlined,
-            label: 'Support',
-            onTap: () => Navigator.pop(context),
-          ),
-          _MenuItem(
-            icon: Icons.settings_outlined,
-            label: 'Settings',
-            onTap: () => Navigator.pop(context),
-          ),
-          Divider(color: cs.onSurface.withValues(alpha: 0.08), height: 1),
-          _MenuItem(
-            icon: Icons.logout_rounded,
-            label: 'Sign Out',
-            color: AppColors.error,
-            onTap: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color? color;
-  final VoidCallback onTap;
-  const _MenuItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color,
+  final bool isDarkMode;
+  final VoidCallback onToggleTheme;
+  const _MenuSheet({
+    required this.status,
+    required this.isDarkMode,
+    required this.onToggleTheme,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final c = color ?? cs.onSurface;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimens.xl,
-          vertical: AppDimens.md,
+    final cs     = Theme.of(context).colorScheme;
+    final isDark = isDarkMode;
+    final bp     = MediaQuery.paddingOf(context).bottom;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.78,
+      minChildSize:     0.55,
+      maxChildSize:     0.95,
+      snap: true,
+      snapSizes: const [0.55, 0.78, 0.95],
+      builder: (ctx, scroll) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: c.withValues(alpha: color != null ? 1.0 : 0.7),
-            ),
-            const SizedBox(width: AppDimens.md),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: c,
+        clipBehavior: Clip.antiAlias,
+        child: CustomScrollView(
+          controller: scroll,
+          slivers: [
+            // Handle
+            SliverToBoxAdapter(
+              child: Center(
+                child: Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
               ),
             ),
-            const Spacer(),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: cs.onSurface.withValues(alpha: 0.3),
+
+            // Hero profile card
+            SliverToBoxAdapter(
+              child: _ProfileHero(status: status, isDark: isDark, cs: cs),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+            // Stat cards
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppDimens.base),
+                child: Row(children: [
+                  Expanded(child: _StatCard(
+                    icon: Icons.account_balance_wallet_rounded,
+                    iconColor: const Color(0xFF10B981),
+                    label: 'Earned Today', value: 'LYD 0.00',
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: _StatCard(
+                    icon: Icons.delivery_dining_rounded,
+                    iconColor: const Color(0xFF6366F1),
+                    label: 'Deliveries', value: '0',
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: _StatCard(
+                    icon: Icons.star_rounded,
+                    iconColor: const Color(0xFFF59E0B),
+                    label: 'Rating', value: '4.9 ★',
+                  )),
+                ]),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+            // Theme toggle
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppDimens.base),
+                child: _ThemeToggleRow(isDark: isDark, onToggle: onToggleTheme, cs: cs),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+            // Nav items
+            SliverToBoxAdapter(
+              child: Column(children: [
+                _NavItem(icon: Icons.history_rounded,              iconBg: const Color(0xFF6366F1), label: 'Delivery History',   sub: 'View all past trips',        onTap: () => Navigator.pop(context), cs: cs),
+                _NavItem(icon: Icons.account_balance_wallet_rounded, iconBg: const Color(0xFF10B981), label: 'Wallet & Earnings',   sub: 'Balance · Payouts',          onTap: () => Navigator.pop(context), cs: cs),
+                _NavItem(icon: Icons.star_rounded,                 iconBg: const Color(0xFFF59E0B), label: 'My Rating',           sub: '4.9 · 127 reviews',          onTap: () => Navigator.pop(context), cs: cs),
+                _NavItem(icon: Icons.support_agent_rounded,        iconBg: const Color(0xFF8B5CF6), label: 'Support',             sub: 'Help & contact',             onTap: () => Navigator.pop(context), cs: cs),
+                _NavItem(icon: Icons.tune_rounded,                 iconBg: const Color(0xFF64748B), label: 'Settings',            sub: 'Notifications · Account',    onTap: () => Navigator.pop(context), cs: cs),
+              ]),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // Sign out
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(AppDimens.base, 0, AppDimens.base, bp + 24),
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.25)),
+                    ),
+                    child: const Center(
+                      child: Text('Sign Out',
+                        style: TextStyle(
+                          fontFamily: 'Inter', fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFEF4444), letterSpacing: -0.2,
+                        )),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -949,6 +907,282 @@ class _MenuItem extends StatelessWidget {
     );
   }
 }
+
+// ── Profile hero ──────────────────────────────────────────────────────────────
+
+class _ProfileHero extends StatelessWidget {
+  final _DriverStatus status;
+  final bool isDark;
+  final ColorScheme cs;
+  const _ProfileHero({required this.status, required this.isDark, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    final isOnline = status != _DriverStatus.offline;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.base),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF1A1A2E), Color(0xFF0F2D1E)]
+                : const [Color(0xFFF0FFF4), Color(0xFFECFDF5)],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.primaryGreen.withValues(alpha: isDark ? 0.25 : 0.3),
+          ),
+        ),
+        child: Row(children: [
+          // Avatar with status dot
+          Stack(children: [
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primaryGreen, AppColors.primaryGreenDark],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(
+                  color: AppColors.primaryGreen.withValues(alpha: 0.4),
+                  blurRadius: 16, offset: const Offset(0, 4),
+                )],
+              ),
+              child: const Center(child: Text('D', style: TextStyle(
+                fontFamily: 'Inter', fontSize: 26,
+                fontWeight: FontWeight.w900, color: Colors.white,
+              ))),
+            ),
+            Positioned(
+              right: 0, bottom: 0,
+              child: Container(
+                width: 16, height: 16,
+                decoration: BoxDecoration(
+                  color: isOnline ? AppColors.primaryGreen : const Color(0xFF6B7280),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: cs.surface, width: 2.5),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(width: 16),
+
+          // Name + stars
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Driver', style: TextStyle(
+                fontFamily: 'Inter', fontSize: 20,
+                fontWeight: FontWeight.w800, letterSpacing: -0.5, color: cs.onSurface,
+              )),
+              const SizedBox(height: 4),
+              Row(children: [
+                const Icon(Icons.star_rounded,       color: Color(0xFFF59E0B), size: 14),
+                const Icon(Icons.star_rounded,       color: Color(0xFFF59E0B), size: 14),
+                const Icon(Icons.star_rounded,       color: Color(0xFFF59E0B), size: 14),
+                const Icon(Icons.star_rounded,       color: Color(0xFFF59E0B), size: 14),
+                const Icon(Icons.star_half_rounded,  color: Color(0xFFF59E0B), size: 14),
+                const SizedBox(width: 4),
+                Text('4.9', style: TextStyle(
+                  fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w600,
+                  color: cs.onSurface.withValues(alpha: 0.5),
+                )),
+              ]),
+            ],
+          )),
+
+          // Status badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isOnline
+                  ? AppColors.primaryGreen.withValues(alpha: 0.15)
+                  : cs.onSurface.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text(
+              isOnline
+                  ? (status == _DriverStatus.onDelivery ? 'On Delivery' : 'Online')
+                  : 'Offline',
+              style: TextStyle(
+                fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700,
+                color: isOnline ? AppColors.primaryGreen : cs.onSurface.withValues(alpha: 0.4),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Stat card ─────────────────────────────────────────────────────────────────
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  const _StatCard({required this.icon, required this.iconColor,
+      required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+      decoration: BoxDecoration(
+        color: cs.onSurface.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.onSurface.withValues(alpha: 0.07)),
+      ),
+      child: Column(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12), shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+        const SizedBox(height: 8),
+        Text(value, style: TextStyle(
+          fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w800,
+          color: cs.onSurface, letterSpacing: -0.3,
+        )),
+        const SizedBox(height: 2),
+        Text(label, textAlign: TextAlign.center, style: TextStyle(
+          fontFamily: 'Inter', fontSize: 10,
+          color: cs.onSurface.withValues(alpha: 0.45),
+        )),
+      ]),
+    );
+  }
+}
+
+// ── Theme toggle row ──────────────────────────────────────────────────────────
+
+class _ThemeToggleRow extends StatelessWidget {
+  final bool isDark;
+  final VoidCallback onToggle;
+  final ColorScheme cs;
+  const _ThemeToggleRow({required this.isDark, required this.onToggle, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onToggle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: cs.onSurface.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: cs.onSurface.withValues(alpha: 0.07)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFFF59E0B).withValues(alpha: 0.15)
+                  : const Color(0xFF6366F1).withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              color: isDark ? const Color(0xFFF59E0B) : const Color(0xFF6366F1),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(isDark ? 'Light Mode' : 'Dark Mode',
+                style: TextStyle(fontFamily: 'Inter', fontSize: 15,
+                    fontWeight: FontWeight.w600, color: cs.onSurface)),
+              Text(isDark ? 'Switch to light theme' : 'Switch to dark theme',
+                style: TextStyle(fontFamily: 'Inter', fontSize: 12,
+                    color: cs.onSurface.withValues(alpha: 0.45))),
+            ],
+          )),
+          // Animated pill
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            width: 48, height: 28,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF6366F1)
+                  : cs.onSurface.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 22, height: 22,
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Nav item ──────────────────────────────────────────────────────────────────
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final String label;
+  final String sub;
+  final VoidCallback onTap;
+  final ColorScheme cs;
+  const _NavItem({required this.icon, required this.iconBg, required this.label,
+      required this.sub, required this.onTap, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      splashColor: cs.onSurface.withValues(alpha: 0.04),
+      highlightColor: cs.onSurface.withValues(alpha: 0.03),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.base, vertical: 10),
+        child: Row(children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: iconBg.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: iconBg, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 15,
+                  fontWeight: FontWeight.w600, color: cs.onSurface)),
+              Text(sub, style: TextStyle(fontFamily: 'Inter', fontSize: 12,
+                  color: cs.onSurface.withValues(alpha: 0.45))),
+            ],
+          )),
+          Icon(Icons.chevron_right_rounded,
+              size: 18, color: cs.onSurface.withValues(alpha: 0.25)),
+        ]),
+      ),
+    );
+  }
+}
+
 
 // ── Reusable small widgets ───────────────────────────────────────────────────
 
