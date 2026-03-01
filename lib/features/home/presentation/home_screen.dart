@@ -58,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen>
   // Bottom sheet animation
   late final AnimationController _sheetCtrl;
   late final Animation<Offset> _sheetSlide;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Incoming order pop-up mock
   bool _showIncomingOrder = false;
@@ -167,7 +168,9 @@ class _HomeScreenState extends State<HomeScreen>
             _status == _DriverStatus.offline ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: Colors.black,
+        endDrawer: _DriverDrawer(status: _status),
         body: Stack(
           children: [
             // ── MAP ─────────────────────────────────────────────────────
@@ -219,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen>
                   // Menu
                   _MapIconButton(
                     icon: Icons.menu_rounded,
-                    onTap: () {},
+                    onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
                     dark: _status != _DriverStatus.offline,
                   ),
                 ],
@@ -270,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen>
       case _DriverStatus.offline:
         return 200 + bottomPad;
       case _DriverStatus.online:
-        return 160 + bottomPad;
+        return 110 + bottomPad;
       case _DriverStatus.onDelivery:
         return 280 + bottomPad;
     }
@@ -317,8 +320,8 @@ class _DriverMarker extends StatelessWidget {
       ),
       child: Center(
         child: Container(
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
@@ -333,7 +336,7 @@ class _DriverMarker extends StatelessWidget {
           child: const Icon(
             Icons.delivery_dining_rounded,
             color: Colors.white,
-            size: 20,
+            size: 26,
           ),
         ),
       ),
@@ -418,7 +421,7 @@ class _EarningsChip extends StatelessWidget {
           const Icon(Icons.bolt_rounded, color: AppColors.warning, size: 14),
           const SizedBox(width: 4),
           Text(
-            'SAR ${amount > 0 ? amount.toStringAsFixed(1) : "–"}',
+            'LYD ${amount > 0 ? amount.toStringAsFixed(1) : "–"}',
             style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 13,
@@ -610,21 +613,8 @@ class _OnlineSheet extends StatelessWidget {
           const SizedBox(height: AppDimens.lg),
 
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Pulsing dot
-              _PulsingDot(),
-              const SizedBox(width: AppDimens.sm),
-              const Text(
-                'Looking for orders...',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryDark,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const Spacer(),
               TextButton(
                 onPressed: onGoOffline,
                 style: TextButton.styleFrom(
@@ -639,15 +629,6 @@ class _OnlineSheet extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: AppDimens.md),
-          Text(
-            'Stay in the app to receive delivery requests instantly.',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 13,
-              color: AppColors.textSecondaryDark.withValues(alpha: 0.7),
-            ),
           ),
         ],
       ),
@@ -727,7 +708,7 @@ class _DeliverySheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppDimens.radiusSm),
                 ),
                 child: Text(
-                  'SAR ${order.earnings.toStringAsFixed(2)}',
+                  'LYD ${order.earnings.toStringAsFixed(2)}',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 14,
@@ -884,7 +865,7 @@ class _IncomingOrderOverlay extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       const Text(
-                        'SAR 18.50',
+                        'LYD 18.50',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 18,
@@ -964,6 +945,268 @@ class _IncomingOrderOverlay extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Driver side drawer ────────────────────────────────────────────────────────
+
+class _DriverDrawer extends StatelessWidget {
+  final _DriverStatus status;
+  const _DriverDrawer({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+    final bottomPad = MediaQuery.paddingOf(context).bottom;
+
+    return Drawer(
+      width: MediaQuery.sizeOf(context).width * 0.78,
+      backgroundColor: AppColors.backgroundDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(left: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // ── Profile header ───────────────────────────────────────────
+          Container(
+            padding: EdgeInsets.fromLTRB(
+                AppDimens.xl, topPad + AppDimens.xl, AppDimens.xl, AppDimens.xl),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceDark,
+              border: Border(
+                bottom: BorderSide(color: AppColors.dividerDark),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primaryGreen, AppColors.primaryGreenDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'D',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppDimens.md),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Driver',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimaryDark,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Barq Delivery',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          color: AppColors.textSecondaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Status indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.sm,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+                  ),
+                  child: Text(
+                    status == _DriverStatus.offline ? 'Offline' : 'Online',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: status == _DriverStatus.offline
+                          ? AppColors.textSecondaryDark
+                          : AppColors.primaryGreen,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Today's earnings ─────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(AppDimens.xl),
+            child: Container(
+              padding: const EdgeInsets.all(AppDimens.base),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark,
+                borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _DrawerStat(label: "Today's earnings", value: 'LYD 0.00'),
+                  Container(width: 1, height: 32, color: AppColors.dividerDark),
+                  _DrawerStat(label: 'Deliveries', value: '0'),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Nav items ────────────────────────────────────────────────
+          _DrawerItem(
+            icon: Icons.history_rounded,
+            label: 'Delivery History',
+            onTap: () => Navigator.pop(context),
+          ),
+          _DrawerItem(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Wallet & Earnings',
+            onTap: () => Navigator.pop(context),
+          ),
+          _DrawerItem(
+            icon: Icons.star_outline_rounded,
+            label: 'My Rating',
+            onTap: () => Navigator.pop(context),
+          ),
+          _DrawerItem(
+            icon: Icons.support_agent_outlined,
+            label: 'Support',
+            onTap: () => Navigator.pop(context),
+          ),
+          _DrawerItem(
+            icon: Icons.settings_outlined,
+            label: 'Settings',
+            onTap: () => Navigator.pop(context),
+          ),
+
+          const Spacer(),
+
+          // ── Logout ───────────────────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppDimens.xl,
+              0,
+              AppDimens.xl,
+              bottomPad + AppDimens.xl,
+            ),
+            child: _DrawerItem(
+              icon: Icons.logout_rounded,
+              label: 'Sign Out',
+              color: AppColors.error,
+              onTap: () => Navigator.pop(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DrawerStat extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DrawerStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimaryDark,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 11,
+            color: AppColors.textSecondaryDark,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+  final VoidCallback onTap;
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? AppColors.textPrimaryDark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: AppColors.dividerDark,
+        highlightColor: AppColors.surfaceDark,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.xl,
+            vertical: AppDimens.md,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: c.withValues(alpha: 0.8)),
+              const SizedBox(width: AppDimens.md),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: c,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: AppColors.textSecondaryDark.withValues(alpha: 0.5),
               ),
             ],
           ),
