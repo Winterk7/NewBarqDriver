@@ -131,17 +131,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final bottomPad = MediaQuery.paddingOf(context).bottom;
     final topPad = MediaQuery.paddingOf(context).top;
     final appIsDark = ref.watch(themeModeProvider) == ThemeMode.dark;
-    // Map uses dark tiles when app is in dark mode -OR- driver is online
-    final tileStyle = (appIsDark || _status != DriverStatus.offline)
-        ? 'dark-v11'
-        : 'streets-v12';
+    // Map tile follows theme only — online/offline status does not affect it
+    final tileStyle = appIsDark ? 'dark-v11' : 'streets-v12';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarBrightness:
-            (appIsDark || _status != DriverStatus.offline) ? Brightness.dark : Brightness.light,
-        statusBarIconBrightness:
-            (appIsDark || _status != DriverStatus.offline) ? Brightness.light : Brightness.dark,
+        statusBarBrightness: appIsDark ? Brightness.dark : Brightness.light,
+        statusBarIconBrightness: appIsDark ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -187,15 +183,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Row(
                 children: [
                   // Status pill
-                  _StatusPill(status: _status),
+                  _StatusPill(status: _status, dark: appIsDark),
                   const Spacer(),
                   // Earnings chip
                   if (_status != DriverStatus.offline)
-                    _EarningsChip(amount: _activeOrder?.earnings ?? 0),
+                    _EarningsChip(amount: _activeOrder?.earnings ?? 0, dark: appIsDark),
                   const SizedBox(width: AppDimens.sm),
                   // Theme toggle
                   _MapIconButton(
-                    icon: ref.watch(themeModeProvider) == ThemeMode.dark
+                    icon: appIsDark
                         ? Icons.light_mode_rounded
                         : Icons.dark_mode_rounded,
                     onTap: () {
@@ -204,14 +200,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ref.read(themeModeProvider.notifier).state =
                           cur == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
                     },
-                    dark: _status != DriverStatus.offline,
+                    dark: appIsDark,
                   ),
                   const SizedBox(width: AppDimens.sm),
                   // Menu
                   _MapIconButton(
                     icon: Icons.menu_rounded,
                     onTap: _openMenu,
-                    dark: _status != DriverStatus.offline,
+                    dark: appIsDark,
                   ),
                 ],
               ),
@@ -227,7 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   _mapCtrl.move(_defaultCenter, 15.0);
                   HapticFeedback.lightImpact();
                 },
-                dark: _status != DriverStatus.offline,
+                dark: appIsDark,
               ),
             ),
 
@@ -254,7 +250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       case DriverStatus.offline:
         return 200 + bottomPad;
       case DriverStatus.online:
-        return 110 + bottomPad;
+        return 280 + bottomPad;
       case DriverStatus.onDelivery:
         return 280 + bottomPad;
     }
@@ -290,13 +286,14 @@ class _DriverMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isOnline ? AppColors.primaryGreen : AppColors.textSecondaryDark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? Colors.white : AppColors.backgroundDark;
+    final fg = isDark ? AppColors.backgroundDark : Colors.white;
     return Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: bg.withValues(alpha: 0.15),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -304,19 +301,19 @@ class _DriverMarker extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: color,
+            color: bg,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: 0.5),
+                color: Colors.black.withValues(alpha: 0.25),
                 blurRadius: 12,
                 spreadRadius: 2,
               ),
             ],
           ),
-          child: const Icon(
+          child: Icon(
             Icons.delivery_dining_rounded,
-            color: Colors.white,
+            color: fg,
             size: 26,
           ),
         ),
@@ -329,24 +326,30 @@ class _DriverMarker extends StatelessWidget {
 
 class _StatusPill extends StatelessWidget {
   final DriverStatus status;
-  const _StatusPill({required this.status});
+  final bool dark;
+  const _StatusPill({required this.status, required this.dark});
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (status) {
-      DriverStatus.offline => ('Offline', AppColors.textSecondaryLight),
-      DriverStatus.online => ('Online', AppColors.primaryGreen),
-      DriverStatus.onDelivery => ('On Delivery', AppColors.warning),
+    final label = switch (status) {
+      DriverStatus.offline    => 'Offline',
+      DriverStatus.online     => 'Online',
+      DriverStatus.onDelivery => 'On Delivery',
     };
+    final dotColor = switch (status) {
+      DriverStatus.offline    => dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+      DriverStatus.online     => AppColors.primaryGreen,
+      DriverStatus.onDelivery => AppColors.warning,
+    };
+    final bgColor  = dark ? Colors.black.withValues(alpha: 0.75) : Colors.white;
+    final txtColor = dark ? Colors.white : AppColors.textPrimaryLight;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.md,
         vertical: AppDimens.sm,
       ),
       decoration: BoxDecoration(
-        color: status == DriverStatus.offline
-            ? Colors.white
-            : Colors.black.withValues(alpha: 0.75),
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppDimens.radiusFull),
         boxShadow: const [
           BoxShadow(color: Color(0x22000000), blurRadius: 8, offset: Offset(0, 2)),
@@ -355,23 +358,9 @@ class _StatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: status == DriverStatus.offline
-                  ? AppColors.textPrimaryLight
-                  : Colors.white,
-            ),
-          ),
+          Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: txtColor)),
         ],
       ),
     );
@@ -380,17 +369,20 @@ class _StatusPill extends StatelessWidget {
 
 class _EarningsChip extends StatelessWidget {
   final double amount;
-  const _EarningsChip({required this.amount});
+  final bool dark;
+  const _EarningsChip({required this.amount, required this.dark});
 
   @override
   Widget build(BuildContext context) {
+    final bgColor  = dark ? Colors.black.withValues(alpha: 0.75) : Colors.white;
+    final txtColor = dark ? Colors.white : AppColors.textPrimaryLight;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.md,
         vertical: AppDimens.sm,
       ),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.75),
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppDimens.radiusFull),
         boxShadow: const [
           BoxShadow(color: Color(0x22000000), blurRadius: 8, offset: Offset(0, 2)),
@@ -399,15 +391,15 @@ class _EarningsChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.bolt_rounded, color: AppColors.warning, size: 14),
+          Icon(Icons.bolt_rounded, color: dark ? AppColors.warning : AppColors.textPrimaryLight, size: 14),
           const SizedBox(width: 4),
           Text(
-            'LYD ${amount > 0 ? amount.toStringAsFixed(1) : "–"}',
-            style: const TextStyle(
+            'LYD ${amount > 0 ? amount.toStringAsFixed(1) : "\u2013"}',
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: txtColor,
             ),
           ),
         ],
@@ -560,28 +552,37 @@ class _OfflineSheet extends StatelessWidget {
   }
 }
 
-class _OnlineSheet extends StatelessWidget {
+class _OnlineSheet extends StatefulWidget {
   final double bottomPad;
   final VoidCallback onGoOffline;
   const _OnlineSheet({required this.bottomPad, required this.onGoOffline});
 
   @override
+  State<_OnlineSheet> createState() => _OnlineSheetState();
+}
+
+class _OnlineSheetState extends State<_OnlineSheet> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.fromLTRB(
-        AppDimens.xl,
-        AppDimens.lg,
-        AppDimens.xl,
-        bottomPad + AppDimens.lg,
+        AppDimens.xl, AppDimens.lg, AppDimens.xl, widget.bottomPad + AppDimens.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.backgroundDark,
+        color: cs.surface,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppDimens.radiusLg),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 24,
             offset: const Offset(0, -4),
           ),
@@ -589,40 +590,143 @@ class _OnlineSheet extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Handle
           Center(
             child: Container(
-              width: 36,
-              height: 4,
+              width: 36, height: 4,
               decoration: BoxDecoration(
-                color: AppColors.dividerDark,
+                color: cs.onSurface.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppDimens.radiusFull),
               ),
             ),
           ),
           const SizedBox(height: AppDimens.lg),
 
+          // Compact search row
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
-                onPressed: onGoOffline,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondaryDark,
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text(
-                  'Go Offline',
-                  style: TextStyle(fontFamily: 'Inter', fontSize: 13),
+              // Three bouncing dots
+              _BouncingDots(cs: cs),
+              const SizedBox(width: AppDimens.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Searching for orders',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    Text(
+                      "You'll be notified when an order is assigned",
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        color: cs.onSurface.withValues(alpha: 0.50),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: AppDimens.lg),
+
+          // Go Offline button
+          SizedBox(
+            width: double.infinity,
+            height: AppDimens.buttonHeight,
+            child: ElevatedButton(
+              onPressed: widget.onGoOffline,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.backgroundDark,
+                foregroundColor: isDark
+                    ? AppColors.backgroundDark
+                    : AppColors.textPrimaryDark,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+                ),
+              ),
+              child: const Text(
+                'Go Offline',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+// ── Bouncing dots indicator ───────────────────────────────────────────────────
+class _BouncingDots extends StatefulWidget {
+  final ColorScheme cs;
+  const _BouncingDots({required this.cs});
+  @override
+  State<_BouncingDots> createState() => _BouncingDotsState();
+}
+
+class _BouncingDotsState extends State<_BouncingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 7.0;
+    final col = widget.cs.onSurface;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (i) {
+        final anim = Tween<double>(begin: 0.25, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _ctrl,
+            curve: Interval(i / 3, (i + 1) / 3, curve: Curves.easeInOut),
+          ),
+        );
+        return Padding(
+          padding: EdgeInsets.only(right: i < 2 ? 5 : 0),
+          child: AnimatedBuilder(
+            animation: anim,
+            builder: (_, __) => Opacity(
+              opacity: anim.value,
+              child: Container(
+                width: size, height: size,
+                decoration: BoxDecoration(color: col, shape: BoxShape.circle),
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }
@@ -639,6 +743,7 @@ class _DeliverySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDimens.xl,
@@ -647,13 +752,13 @@ class _DeliverySheet extends StatelessWidget {
         bottomPad + AppDimens.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.backgroundDark,
+        color: cs.surface,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppDimens.radiusLg),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 24,
             offset: const Offset(0, -4),
           ),
@@ -669,7 +774,7 @@ class _DeliverySheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.dividerDark,
+                color: cs.onSurface.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppDimens.radiusFull),
               ),
             ),
@@ -681,10 +786,10 @@ class _DeliverySheet extends StatelessWidget {
             children: [
               Text(
                 order.id,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 13,
-                  color: AppColors.textSecondaryDark,
+                  color: cs.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -803,7 +908,7 @@ class _RouteRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-            Container(width: 2, height: 32, color: AppColors.dividerDark),
+            Container(width: 2, height: 32, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15)),
             Container(
               width: 10,
               height: 10,
@@ -822,37 +927,37 @@ class _RouteRow extends StatelessWidget {
             children: [
               Text(
                 pickupLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               Text(
                 pickupAddress,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
-                  color: AppColors.textSecondaryDark,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                 ),
               ),
               const SizedBox(height: AppDimens.md),
               Text(
                 customerName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               Text(
                 dropoffAddress,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 12,
-                  color: AppColors.textSecondaryDark,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                 ),
               ),
             ],
@@ -876,21 +981,21 @@ class _StatChip extends StatelessWidget {
         vertical: AppDimens.xs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppDimens.radiusSm),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: AppColors.textSecondaryDark),
+          Icon(icon, size: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55)),
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondaryDark,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
             ),
           ),
         ],

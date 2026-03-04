@@ -13,581 +13,218 @@ class DriverMenuPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dark         = Theme.of(context).brightness == Brightness.dark;
-    final bg           = dark ? AppColors.backgroundDark   : AppColors.backgroundLight;
-    final surface      = dark ? AppColors.surfaceDark      : AppColors.surfaceLight;
-    final cardBg       = dark ? AppColors.cardDark         : AppColors.cardLight;
-    final textPrimary  = dark ? AppColors.textPrimaryDark  : AppColors.textPrimaryLight;
-    final textSec      = dark ? AppColors.textSecondaryDark: AppColors.textSecondaryLight;
-    final divider      = dark ? AppColors.dividerDark      : AppColors.dividerLight;
-    final topPad       = MediaQuery.paddingOf(context).top;
-    final bottomPad    = MediaQuery.paddingOf(context).bottom;
+    final dark        = Theme.of(context).brightness == Brightness.dark;
+    final themeMode   = ref.watch(themeModeProvider);
+    final bg          = dark ? AppColors.backgroundDark  : AppColors.backgroundLight;
+    final textPrimary = dark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final textSec     = dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final divider     = dark ? AppColors.dividerDark     : AppColors.dividerLight;
+    final cardBg      = dark ? AppColors.cardDark        : AppColors.cardLight;
+    final borderColor = dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.07);
+    final topPad      = MediaQuery.paddingOf(context).top;
+    final bottomPad   = MediaQuery.paddingOf(context).bottom;
+
+    Widget sectionLabel(String t) => Padding(
+          padding: const EdgeInsets.fromLTRB(0, AppDimens.xl, 0, AppDimens.sm),
+          child: Text(t, style: TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: textSec)),
+        );
+
+    Widget settingsRow({
+      required IconData icon,
+      required String label,
+      String? value,
+      Widget? trailing,
+      VoidCallback? onTap,
+      bool isFirst = false,
+      bool isLast = false,
+    }) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap ?? () => HapticFeedback.selectionClick(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppDimens.base, vertical: AppDimens.md + 1),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: (isFirst && isLast)
+                ? BorderRadius.circular(AppDimens.radiusLg)
+                : isFirst
+                    ? const BorderRadius.vertical(top: Radius.circular(AppDimens.radiusLg))
+                    : isLast
+                        ? const BorderRadius.vertical(bottom: Radius.circular(AppDimens.radiusLg))
+                        : BorderRadius.zero,
+            border: Border(top: isFirst ? BorderSide.none : BorderSide(color: divider, width: 0.5)),
+          ),
+          child: Row(children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(color: textSec.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppDimens.radiusSm)),
+              child: Icon(icon, size: 16, color: textSec),
+            ),
+            const SizedBox(width: AppDimens.md),
+            Expanded(child: Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary))),
+            if (value != null) ...[const SizedBox(width: AppDimens.sm), Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: textSec)), const SizedBox(width: 4)],
+            trailing ?? Icon(Icons.chevron_right_rounded, size: 18, color: textSec.withValues(alpha: 0.50)),
+          ]),
+        ),
+      );
+    }
+
+    Widget settingsCard(List<Widget> rows) => Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(AppDimens.radiusLg), border: Border.all(color: borderColor)),
+          child: Column(children: rows),
+        );
+
+    Widget appearanceTrailing() {
+      final labels = {ThemeMode.system: 'System', ThemeMode.light: 'Light', ThemeMode.dark: 'Dark'};
+      final icons = {ThemeMode.system: Icons.brightness_auto_rounded, ThemeMode.light: Icons.light_mode_rounded, ThemeMode.dark: Icons.dark_mode_rounded};
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppDimens.md, vertical: 5),
+        decoration: BoxDecoration(color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppDimens.radiusFull)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icons[themeMode]!, size: 13, color: textPrimary),
+          const SizedBox(width: 4),
+          Text(labels[themeMode]!, style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary)),
+        ]),
+      );
+    }
 
     return Scaffold(
       backgroundColor: bg,
-      body: Column(
-        children: [
-          // ── Header ────────────────────────────────────────────────────
-          Container(
-            color: surface,
-            padding: EdgeInsets.fromLTRB(
-                AppDimens.base, topPad + AppDimens.sm, AppDimens.base, AppDimens.base),
-            child: Row(
-              children: [
-                // Close button
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: dark
-                          ? AppColors.dividerDark
-                          : AppColors.dividerLight,
-                      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-                    ),
-                    child: Icon(Icons.close_rounded,
-                        size: AppDimens.iconMd, color: textPrimary),
-                  ),
-                ),
-                const SizedBox(width: AppDimens.md),
-                Text(
-                  'Menu',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Scrollable body ───────────────────────────────────────────
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                  AppDimens.base, AppDimens.base, AppDimens.base, bottomPad + AppDimens.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Profile card ──────────────────────────────────────
-                  _ProfileCard(
-                    status: status,
-                    dark: dark,
-                    textPrimary: textPrimary,
-                    textSec: textSec,
-                  ),
-                  const SizedBox(height: AppDimens.base),
-
-                  // ── Stats row ─────────────────────────────────────────
-                  Row(children: [
-                    _StatCard(
-                      icon: Icons.account_balance_wallet_rounded,
-                      accent: AppColors.success,
-                      label: 'Earned Today',
-                      value: 'LYD 0.00',
-                      dark: dark,
-                      textPrimary: textPrimary,
-                      textSec: textSec,
-                    ),
-                    const SizedBox(width: AppDimens.sm),
-                    _StatCard(
-                      icon: Icons.delivery_dining_rounded,
-                      accent: AppColors.info,
-                      label: 'Deliveries',
-                      value: '0',
-                      dark: dark,
-                      textPrimary: textPrimary,
-                      textSec: textSec,
-                    ),
-                    const SizedBox(width: AppDimens.sm),
-                    _StatCard(
-                      icon: Icons.star_rounded,
-                      accent: AppColors.warning,
-                      label: 'Rating',
-                      value: '4.9 ★',
-                      dark: dark,
-                      textPrimary: textPrimary,
-                      textSec: textSec,
-                    ),
-                  ]),
-                  const SizedBox(height: AppDimens.base),
-
-                  // ── Theme toggle ──────────────────────────────────────
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      ref.read(themeModeProvider.notifier).state =
-                          dark ? ThemeMode.light : ThemeMode.dark;
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppDimens.base, vertical: AppDimens.md),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius:
-                            BorderRadius.circular(AppDimens.radiusLg),
-                        border: Border.all(color: divider),
-                      ),
-                      child: Row(children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: dark
-                                ? AppColors.warning.withValues(alpha: 0.15)
-                                : AppColors.info.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            dark
-                                ? Icons.light_mode_rounded
-                                : Icons.dark_mode_rounded,
-                            color: dark ? AppColors.warning : AppColors.info,
-                            size: AppDimens.iconMd,
-                          ),
-                        ),
-                        const SizedBox(width: AppDimens.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                dark ? 'Light Mode' : 'Dark Mode',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: textPrimary,
-                                ),
-                              ),
-                              Text(
-                                dark
-                                    ? 'Switch to light theme'
-                                    : 'Switch to dark theme',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  color: textSec,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Animated pill switch
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
-                          width: 48,
-                          height: 28,
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: dark
-                                ? AppColors.info
-                                : AppColors.dividerLight,
-                            borderRadius:
-                                BorderRadius.circular(AppDimens.radiusFull),
-                          ),
-                          child: AnimatedAlign(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeInOut,
-                            alignment: dark
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              width: 22,
-                              height: 22,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ]),
-                    ),
-                  ),
-                  const SizedBox(height: AppDimens.sm),
-
-                  // ── Nav section ────────────────────────────────────────
-                  Container(
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(AppDimens.radiusLg),
-                      border: Border.all(color: divider),
-                    ),
-                    child: Column(children: [
-                      _NavItem(
-                        icon: Icons.bar_chart_rounded,
-                        accent: AppColors.primaryGreen,
-                        label: 'Analytics',
-                        sub: 'Earnings, deliveries & stats',
-                        divider: divider,
-                        textPrimary: textPrimary,
-                        textSec: textSec,
-                        isFirst: true,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const DriverAnalyticsScreen(),
-                          ),
-                        ),
-                      ),
-                      _NavItem(
-                        icon: Icons.history_rounded,
-                        accent: AppColors.info,
-                        label: 'Delivery History',
-                        sub: 'View all past trips',
-                        divider: divider,
-                        textPrimary: textPrimary,
-                        textSec: textSec,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      _NavItem(
-                        icon: Icons.account_balance_wallet_rounded,
-                        accent: AppColors.success,
-                        label: 'Wallet & Earnings',
-                        sub: 'Balance · Payouts',
-                        divider: divider,
-                        textPrimary: textPrimary,
-                        textSec: textSec,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      _NavItem(
-                        icon: Icons.star_rounded,
-                        accent: AppColors.warning,
-                        label: 'My Rating',
-                        sub: '4.9 · 127 reviews',
-                        divider: divider,
-                        textPrimary: textPrimary,
-                        textSec: textSec,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      _NavItem(
-                        icon: Icons.support_agent_rounded,
-                        accent: AppColors.primaryGreen,
-                        label: 'Support',
-                        sub: 'Help & contact',
-                        divider: divider,
-                        textPrimary: textPrimary,
-                        textSec: textSec,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                      _NavItem(
-                        icon: Icons.tune_rounded,
-                        accent: AppColors.textSecondaryLight,
-                        label: 'Settings',
-                        sub: 'Notifications · Account',
-                        divider: divider,
-                        textPrimary: textPrimary,
-                        textSec: textSec,
-                        isLast: true,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                    ]),
-                  ),
-                  const SizedBox(height: AppDimens.sm),
-
-                  // ── Danger zone ───────────────────────────────────────
-                  Container(
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(AppDimens.radiusLg),
-                      border: Border.all(color: divider),
-                    ),
-                    child: Column(children: [
-                      _NavItem(
-                        icon: Icons.delete_outline_rounded,
-                        accent: AppColors.error,
-                        label: 'Request Account Deletion',
-                        sub: 'Permanently remove your account',
-                        divider: divider,
-                        textPrimary: AppColors.error,
-                        textSec: textSec,
-                        isFirst: true,
-                        onTap: () => _showDeleteDialog(context, dark,
-                            textPrimary, textSec, divider, cardBg),
-                      ),
-                      _NavItem(
-                        icon: Icons.logout_rounded,
-                        accent: AppColors.error,
-                        label: 'Sign Out',
-                        sub: '',
-                        divider: divider,
-                        textPrimary: AppColors.error,
-                        textSec: textSec,
-                        isLast: true,
-                        onTap: () => Navigator.pop(context),
-                      ),
-                    ]),
-                  ),
-                ],
+      body: Column(children: [
+        // Header
+        Container(
+          color: dark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          padding: EdgeInsets.fromLTRB(AppDimens.base, topPad + AppDimens.sm, AppDimens.base, AppDimens.base),
+          child: Row(children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: borderColor, borderRadius: BorderRadius.circular(AppDimens.radiusMd)),
+                child: Icon(Icons.close_rounded, size: AppDimens.iconMd, color: textPrimary),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, bool dark, Color textPrimary,
-      Color textSec, Color divider, Color cardBg) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: cardBg,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimens.radiusXl)),
-        title: Text(
-          'Delete Account?',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-            color: textPrimary,
-            letterSpacing: -0.4,
-          ),
+            const SizedBox(width: AppDimens.md),
+            Text('Menu', style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.4)),
+          ]),
         ),
-        content: Text(
-          'Your account deletion request will be reviewed within 7 days. All your data will be permanently removed.',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            color: textSec,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w600,
-                color: textSec,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Request Deletion',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontWeight: FontWeight.w700,
-                color: AppColors.error,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
-// ── Profile card ──────────────────────────────────────────────────────────────
-
-class _ProfileCard extends StatelessWidget {
-  final DriverStatus status;
-  final bool dark;
-  final Color textPrimary;
-  final Color textSec;
-  const _ProfileCard({
-    required this.status,
-    required this.dark,
-    required this.textPrimary,
-    required this.textSec,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isOnline = status != DriverStatus.offline;
-    return Container(
-      padding: const EdgeInsets.all(AppDimens.base),
-      decoration: BoxDecoration(
-        color: dark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(AppDimens.radiusLg),
-        border: Border.all(
-          color: dark ? AppColors.dividerDark : AppColors.dividerLight,
-        ),
-      ),
-      child: Row(children: [
-        // Avatar
-        Stack(children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primaryGreen, AppColors.primaryGreenDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Text(
-                'D',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: 15,
-              height: 15,
-              decoration: BoxDecoration(
-                color: isOnline ? AppColors.primaryGreen : AppColors.textSecondaryLight,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: dark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                  width: 2.5,
-                ),
-              ),
-            ),
-          ),
-        ]),
-        const SizedBox(width: AppDimens.md),
-
-        // Name + rating
+        // Body
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Driver',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: textPrimary,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 4),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(AppDimens.base, AppDimens.base, AppDimens.base, bottomPad + AppDimens.xl),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // Profile card
+              _ProfileCard(status: status, dark: dark, textPrimary: textPrimary, textSec: textSec, borderColor: borderColor, cardBg: cardBg),
+              const SizedBox(height: AppDimens.sm),
+
+              // Stats row
               Row(children: [
-                const Icon(Icons.star_rounded, color: AppColors.warning, size: 14),
-                const Icon(Icons.star_rounded, color: AppColors.warning, size: 14),
-                const Icon(Icons.star_rounded, color: AppColors.warning, size: 14),
-                const Icon(Icons.star_rounded, color: AppColors.warning, size: 14),
-                const Icon(Icons.star_half_rounded, color: AppColors.warning, size: 14),
-                const SizedBox(width: AppDimens.xs),
-                Text(
-                  '4.9',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: textSec,
-                  ),
+                _StatCard(icon: Icons.account_balance_wallet_rounded, label: 'Earned Today', value: 'LYD 0.00', textPrimary: textPrimary, textSec: textSec, borderColor: borderColor, cardBg: cardBg),
+                const SizedBox(width: AppDimens.sm),
+                _StatCard(icon: Icons.delivery_dining_rounded, label: 'Deliveries', value: '0', textPrimary: textPrimary, textSec: textSec, borderColor: borderColor, cardBg: cardBg),
+                const SizedBox(width: AppDimens.sm),
+                _StatCard(icon: Icons.star_rounded, label: 'Rating', value: '4.9', textPrimary: textPrimary, textSec: textSec, borderColor: borderColor, cardBg: cardBg),
+              ]),
+
+              // PREFERENCES
+              sectionLabel('PREFERENCES'),
+              settingsCard([
+                settingsRow(
+                  icon: Icons.dark_mode_rounded,
+                  label: 'Appearance',
+                  trailing: appearanceTrailing(),
+                  onTap: () { HapticFeedback.selectionClick(); final next = themeMode == ThemeMode.system ? ThemeMode.light : themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.system; ref.read(themeModeProvider.notifier).state = next; },
+                  isFirst: true, isLast: true,
                 ),
               ]),
-            ],
-          ),
-        ),
 
-        // Status badge
-        Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppDimens.md, vertical: AppDimens.xs),
-          decoration: BoxDecoration(
-            color: isOnline
-                ? AppColors.primaryGreen.withValues(alpha: 0.12)
-                : AppColors.textSecondaryLight.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(AppDimens.radiusFull),
-          ),
-          child: Text(
-            switch (status) {
-              DriverStatus.offline    => 'Offline',
-              DriverStatus.online     => 'Online',
-              DriverStatus.onDelivery => 'On Delivery',
-            },
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isOnline ? AppColors.primaryGreen : AppColors.textSecondaryLight,
-            ),
+              // DRIVER
+              sectionLabel('DRIVER'),
+              settingsCard([
+                settingsRow(icon: Icons.bar_chart_rounded, label: 'Analytics', isFirst: true, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverAnalyticsScreen()))),
+                settingsRow(icon: Icons.history_rounded, label: 'Delivery History', onTap: () {}),
+                settingsRow(icon: Icons.account_balance_wallet_rounded, label: 'Wallet & Earnings', onTap: () {}),
+                settingsRow(icon: Icons.star_rounded, label: 'My Rating', value: '4.9', isLast: true, onTap: () {}),
+              ]),
+
+              // SUPPORT
+              sectionLabel('SUPPORT'),
+              settingsCard([
+                settingsRow(icon: Icons.support_agent_rounded, label: 'Support', isFirst: true, onTap: () {}),
+                settingsRow(icon: Icons.tune_rounded, label: 'Settings', isLast: true, onTap: () {}),
+              ]),
+
+              const SizedBox(height: AppDimens.xl),
+
+              // Sign out
+              GestureDetector(
+                onTap: () { HapticFeedback.mediumImpact(); Navigator.pop(context); },
+                child: Container(
+                  height: AppDimens.buttonHeight,
+                  decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppDimens.radiusMd), border: Border.all(color: AppColors.error.withValues(alpha: 0.20))),
+                  alignment: Alignment.center,
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    const Text('Sign Out', style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.error)),
+                  ]),
+                ),
+              ),
+
+              const SizedBox(height: AppDimens.sm),
+
+              // Request deletion
+              GestureDetector(
+                onTap: () => _showDeleteSheet(context, dark, textPrimary, textSec, borderColor),
+                child: Container(
+                  height: AppDimens.buttonHeight,
+                  decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppDimens.radiusMd), border: Border.all(color: AppColors.error.withValues(alpha: 0.30))),
+                  alignment: Alignment.center,
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: const [
+                    Icon(Icons.delete_forever_rounded, size: 18, color: AppColors.error),
+                    SizedBox(width: 8),
+                    Text('Request Account Deletion', style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.error)),
+                  ]),
+                ),
+              ),
+
+              const SizedBox(height: AppDimens.lg),
+              Center(child: Text('Barq Driver v1.0.0', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: textSec.withValues(alpha: 0.50)))),
+            ]),
           ),
         ),
       ]),
     );
   }
-}
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color accent;
-  final String label;
-  final String value;
-  final bool dark;
-  final Color textPrimary;
-  final Color textSec;
-  const _StatCard({
-    required this.icon,
-    required this.accent,
-    required this.label,
-    required this.value,
-    required this.dark,
-    required this.textPrimary,
-    required this.textSec,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: AppDimens.base, horizontal: AppDimens.sm),
-        decoration: BoxDecoration(
-          color: dark ? AppColors.cardDark : AppColors.cardLight,
-          borderRadius: BorderRadius.circular(AppDimens.radiusLg),
-          border: Border.all(
-            color: dark ? AppColors.dividerDark : AppColors.dividerLight,
-          ),
-        ),
-        child: Column(children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+  void _showDeleteSheet(BuildContext context, bool dark, Color textPrimary, Color textSec, Color borderColor) {
+    final bg = dark ? AppColors.surfaceDark : Colors.white;
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(28)), border: dark ? Border.all(color: Colors.white.withValues(alpha: 0.10)) : null),
+        padding: EdgeInsets.fromLTRB(AppDimens.xl, 0, AppDimens.xl, MediaQuery.of(context).padding.bottom + AppDimens.xl),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(height: 12),
+          Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: dark ? Colors.white.withValues(alpha: 0.20) : Colors.black.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: AppDimens.lg),
+          const Text('Delete Account?', style: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.error, letterSpacing: -0.4)),
+          const SizedBox(height: 4),
+          Text('Your deletion request will be reviewed within 7 days. All your data will be permanently removed.', style: TextStyle(fontFamily: 'Inter', fontSize: 13, color: textSec)),
+          const SizedBox(height: AppDimens.xl),
+          GestureDetector(
+            onTap: () { HapticFeedback.mediumImpact(); Navigator.pop(context); },
+            child: Container(height: AppDimens.buttonHeight, decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(AppDimens.radiusMd)), alignment: Alignment.center,
+              child: const Text('Request Deletion', style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
             ),
-            child: Icon(icon, color: accent, size: AppDimens.iconSm + 2),
           ),
           const SizedBox(height: AppDimens.sm),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 10,
-              color: textSec,
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(height: AppDimens.buttonHeight, decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppDimens.radiusMd), border: Border.all(color: borderColor)), alignment: Alignment.center,
+              child: Text('Cancel', style: TextStyle(fontFamily: 'Inter', fontSize: 15, fontWeight: FontWeight.w600, color: textPrimary)),
             ),
           ),
         ]),
@@ -596,87 +233,84 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ── Nav item ──────────────────────────────────────────────────────────────────
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final Color accent;
-  final String label;
-  final String sub;
-  final Color divider;
+// Profile card
+class _ProfileCard extends StatelessWidget {
+  final DriverStatus status;
+  final bool dark;
   final Color textPrimary;
   final Color textSec;
-  final bool isFirst;
-  final bool isLast;
-  final VoidCallback onTap;
-  const _NavItem({
-    required this.icon,
-    required this.accent,
-    required this.label,
-    required this.sub,
-    required this.divider,
-    required this.textPrimary,
-    required this.textSec,
-    required this.onTap,
-    this.isFirst = false,
-    this.isLast = false,
-  });
+  final Color borderColor;
+  final Color cardBg;
+  const _ProfileCard({required this.status, required this.dark, required this.textPrimary, required this.textSec, required this.borderColor, required this.cardBg});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.vertical(
-        top: isFirst ? const Radius.circular(AppDimens.radiusLg) : Radius.zero,
-        bottom: isLast ? const Radius.circular(AppDimens.radiusLg) : Radius.zero,
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.base, vertical: AppDimens.md),
-        decoration: BoxDecoration(
-          border: isFirst
-              ? null
-              : Border(top: BorderSide(color: divider, width: 0.5)),
-        ),
-        child: Row(children: [
+    final isOnline = status != DriverStatus.offline;
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.xl),
+      decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(AppDimens.radiusXl), border: Border.all(color: borderColor)),
+      child: Row(children: [
+        Stack(children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-            ),
-            child: Icon(icon, color: accent, size: AppDimens.iconMd),
+            width: 60, height: 60,
+            decoration: BoxDecoration(color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06), shape: BoxShape.circle, border: Border.all(color: borderColor, width: 2)),
+            child: Center(child: Text('D', style: TextStyle(fontFamily: 'Inter', fontSize: 22, fontWeight: FontWeight.w800, color: textPrimary))),
           ),
-          const SizedBox(width: AppDimens.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary,
-                  ),
-                ),
-                if (sub.isNotEmpty)
-                  Text(
-                    sub,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: textSec,
-                    ),
-                  ),
-              ],
+          Positioned(
+            right: 0, bottom: 0,
+            child: Container(
+              width: 14, height: 14,
+              decoration: BoxDecoration(
+                color: isOnline ? AppColors.primaryGreen : (dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                shape: BoxShape.circle,
+                border: Border.all(color: cardBg, width: 2),
+              ),
             ),
           ),
-          Icon(Icons.chevron_right_rounded,
-              size: AppDimens.iconMd,
-              color: textSec.withValues(alpha: 0.5)),
+        ]),
+        const SizedBox(width: AppDimens.base),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Driver', style: TextStyle(fontFamily: 'Inter', fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.3)),
+          const SizedBox(height: 3),
+          Text('driver@barq.ly', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: textSec)),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(AppDimens.radiusFull)),
+            child: Text(
+              switch (status) { DriverStatus.offline => 'Offline', DriverStatus.online => 'Online', DriverStatus.onDelivery => 'On Delivery' },
+              style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w700, color: textSec),
+            ),
+          ),
+        ])),
+      ]),
+    );
+  }
+}
+
+// Stat card
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color textPrimary;
+  final Color textSec;
+  final Color borderColor;
+  final Color cardBg;
+  const _StatCard({required this.icon, required this.label, required this.value, required this.textPrimary, required this.textSec, required this.borderColor, required this.cardBg});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppDimens.base, horizontal: AppDimens.sm),
+        decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(AppDimens.radiusMd), border: Border.all(color: borderColor)),
+        child: Column(children: [
+          Icon(icon, size: 18, color: textSec),
+          const SizedBox(height: 6),
+          Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w800, color: textPrimary), textAlign: TextAlign.center),
+          const SizedBox(height: 2),
+          Text(label, textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: textSec)),
         ]),
       ),
     );
