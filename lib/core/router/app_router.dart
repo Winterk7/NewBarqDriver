@@ -4,6 +4,7 @@ import 'package:barq_driver/features/auth/presentation/splash_screen.dart';
 import 'package:barq_driver/features/auth/presentation/onboarding_screen.dart';
 import 'package:barq_driver/features/auth/presentation/login_screen.dart';
 import 'package:barq_driver/features/home/presentation/home_screen.dart';
+import 'package:barq_driver/features/home/presentation/analytics_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -24,6 +25,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/analytics',
+        builder: (context, state) => const DriverAnalyticsScreen(),
       ),
     ],
   );
