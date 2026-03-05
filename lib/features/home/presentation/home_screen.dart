@@ -250,7 +250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       case DriverStatus.offline:
         return 200 + bottomPad;
       case DriverStatus.online:
-        return 280 + bottomPad;
+        return 190 + bottomPad;
       case DriverStatus.onDelivery:
         return 280 + bottomPad;
     }

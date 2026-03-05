@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -72,6 +73,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward().then((_) async {
       if (!mounted) return;
+      // Already logged in → skip onboarding and login
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        context.go('/home');
+        return;
+      }
       final prefs = await SharedPreferences.getInstance();
       final onboarded = prefs.getBool('driver_onboarded') ?? false;
       if (!mounted) return;

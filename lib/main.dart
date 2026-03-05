@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:barq_driver/core/router/app_router.dart';
 import 'package:barq_driver/core/theme/theme.dart';
 import 'package:barq_driver/core/theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: 'https://hqhifevvyvmelmsoarya.supabase.co',
+    anonKey:
+        'sb_publishable_2kS_dsRp3aMu4Q1QzNDRHw_vO6hqPy4',
+  );
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const ProviderScope(child: BarqDriverApp()));
 }

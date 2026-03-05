@@ -1,8 +1,7 @@
 import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -68,10 +67,31 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _loading = false);
-    context.go('/home');
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+      );
+      // Router refreshListenable handles navigation on auth state change
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -85,30 +105,6 @@ class _LoginScreenState extends State<LoginScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // ── Skip button ────────────────────────────────────────────
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  context.go('/home');
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: cs.onSurface.withValues(alpha: 0.4),
-                  padding: const EdgeInsets.fromLTRB(
-                      AppDimens.xl, AppDimens.sm, AppDimens.xl, 0),
-                ),
-                child: const Text(
-                  'Skip',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-
             // ── Scrollable centre zone ─────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
