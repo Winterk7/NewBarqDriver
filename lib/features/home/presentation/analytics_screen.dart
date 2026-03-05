@@ -216,7 +216,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
                 child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
+                  (Directionality.of(context) == TextDirection.rtl ? Icons.arrow_forward_ios_rounded : Icons.arrow_back_ios_new_rounded),
                   size: AppDimens.iconSm,
                   color: textPrimary,
                 ),
