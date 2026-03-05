@@ -1,4 +1,3 @@
-import 'package:barq_driver/core/config/secrets.dart';
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/features/home/domain/driver_status.dart';
 import 'package:barq_driver/features/home/presentation/driver_menu_page.dart';
@@ -11,9 +10,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 // ── Mapbox tile helper ─────────────────────────────────────────────────────────
+const _kMapboxToken =
+    'pk.eyJ1Ijoid2ludGVyayIsImEiOiJjbW00NnRycTgwM3hmMzJyMXM0ZDZsZWRmIn0'
+    '.7zvME7NODb4xyJozscm5JQ';
+
 String _mapboxTile(String style) =>
     'https://api.mapbox.com/styles/v1/mapbox/$style/tiles/256/{z}/{x}/{y}@2x'
-    '?access_token=$kMapboxToken';
+    '?access_token=$_kMapboxToken';
 
 // ── Mock active order ─────────────────────────────────────────────────────────
 class _ActiveOrder {
