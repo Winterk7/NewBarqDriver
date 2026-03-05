@@ -5,6 +5,8 @@ import 'package:barq_driver/features/home/domain/driver_status.dart';
 import 'package:barq_driver/features/home/presentation/analytics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DriverMenuPage extends ConsumerWidget {
@@ -160,7 +162,12 @@ class DriverMenuPage extends ConsumerWidget {
 
               // Sign out
               GestureDetector(
-                onTap: () { HapticFeedback.mediumImpact(); Navigator.pop(context); },
+                onTap: () async {
+                  HapticFeedback.mediumImpact();
+                  Navigator.pop(context);
+                  await Supabase.instance.client.auth.signOut();
+                  if (context.mounted) context.go('/login');
+                },
                 child: Container(
                   height: AppDimens.buttonHeight,
                   decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppDimens.radiusMd), border: Border.all(color: AppColors.error.withValues(alpha: 0.20))),
