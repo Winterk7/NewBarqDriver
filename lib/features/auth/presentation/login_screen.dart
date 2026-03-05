@@ -1,5 +1,6 @@
 import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
+import 'package:barq_driver/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -84,8 +85,8 @@ class _LoginScreenState extends State<LoginScreen>
         await Supabase.instance.client.auth.signOut();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('This account is not registered as a driver.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.errorWrongRole),
             backgroundColor: AppColors.error,
           ),
         );
@@ -103,8 +104,8 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Something went wrong. Please try again.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.errorGeneric),
           backgroundColor: AppColors.error,
         ),
       );
@@ -118,6 +119,8 @@ class _LoginScreenState extends State<LoginScreen>
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final l = AppLocalizations.of(context)!;
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -172,9 +175,9 @@ class _LoginScreenState extends State<LoginScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Welcome back',
+                                  l.welcomeBack,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
+                                    fontFamily: fontFamily,
                                     fontSize: 28,
                                     fontWeight: FontWeight.w800,
                                     color: cs.onSurface,
@@ -184,9 +187,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                                 const SizedBox(height: AppDimens.xs),
                                 Text(
-                                  'Sign in to start delivering',
+                                  l.signInToStartDelivering,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
+                                    fontFamily: fontFamily,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w400,
                                     color:
@@ -211,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _FieldLabel(
-                                    label: 'Email address',
+                                    label: l.emailAddress,
                                     color:
                                         cs.onSurface.withValues(alpha: 0.6),
                                   ),
@@ -223,22 +226,22 @@ class _LoginScreenState extends State<LoginScreen>
                                     autocorrect: false,
                                     style: TextStyle(
                                       color: cs.onSurface,
-                                      fontFamily: 'Inter',
+                                      fontFamily: fontFamily,
                                       fontSize: 15,
                                     ),
                                     decoration: _inputDeco(
                                       context: context,
-                                      hint: 'you@example.com',
+                                      hint: l.emailHint,
                                       icon: Icons.email_outlined,
                                     ),
                                     validator: (v) =>
                                         (v == null || !v.contains('@'))
-                                            ? 'Enter a valid email'
+                                            ? l.enterValidEmail
                                             : null,
                                   ),
                                   const SizedBox(height: AppDimens.base),
                                   _FieldLabel(
-                                    label: 'Password',
+                                    label: l.password,
                                     color:
                                         cs.onSurface.withValues(alpha: 0.6),
                                   ),
@@ -250,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     onFieldSubmitted: (_) => _signIn(),
                                     style: TextStyle(
                                       color: cs.onSurface,
-                                      fontFamily: 'Inter',
+                                      fontFamily: fontFamily,
                                       fontSize: 15,
                                     ),
                                     decoration: _inputDeco(
@@ -273,7 +276,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                     validator: (v) =>
                                         (v == null || v.length < 6)
-                                            ? 'Password must be at least 6 characters'
+                                            ? l.passwordTooShort
                                             : null,
                                   ),
 
@@ -290,10 +293,10 @@ class _LoginScreenState extends State<LoginScreen>
                                           vertical: AppDimens.sm,
                                         ),
                                       ),
-                                      child: const Text(
-                                        'Forgot password?',
+                                      child: Text(
+                                        l.forgotPassword,
                                         style: TextStyle(
-                                          fontFamily: 'Inter',
+                                          fontFamily: fontFamily,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -340,9 +343,9 @@ class _LoginScreenState extends State<LoginScreen>
                                               ),
                                             )
                                           : Text(
-                                              'Sign in',
+                                              l.signIn,
                                               style: TextStyle(
-                                                fontFamily: 'Inter',
+                                                fontFamily: fontFamily,
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w600,
                                                 color: isDark
@@ -376,10 +379,10 @@ class _LoginScreenState extends State<LoginScreen>
                 bottom + AppDimens.md,
               ),
               child: Text(
-                'By signing in, you agree to our Terms of Service and Privacy Policy.',
+                l.termsNotice,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
                   color: cs.onSurface.withValues(alpha: 0.35),
@@ -454,10 +457,11 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     return Text(
       label,
       style: TextStyle(
-        fontFamily: 'Inter',
+        fontFamily: fontFamily,
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: color,

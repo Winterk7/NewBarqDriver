@@ -1,5 +1,6 @@
 import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
+import 'package:barq_driver/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class DriverAnalyticsScreen extends StatefulWidget {
@@ -15,11 +16,12 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
 
   // Mock data
   static const _weeklyEarnings = [45.0, 82.0, 61.0, 110.0, 94.0, 128.0, 55.0];
-  static const _weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   @override
   Widget build(BuildContext context) {
     final dark         = Theme.of(context).brightness == Brightness.dark;
+    final l            = AppLocalizations.of(context)!;
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     final bg           = dark ? AppColors.backgroundDark   : AppColors.backgroundLight;
     final textPrimary  = dark ? AppColors.textPrimaryDark  : AppColors.textPrimaryLight;
     final textSec      = dark ? AppColors.textSecondaryDark: AppColors.textSecondaryLight;
@@ -28,6 +30,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
     final divider      = dark ? AppColors.dividerDark      : AppColors.dividerLight;
 
     final maxBar = _weeklyEarnings.reduce((a, b) => a > b ? a : b);
+    final weekLabels = [l.dayMon, l.dayTue, l.dayWed, l.dayThu, l.dayFri, l.daySat, l.daySun];
 
     Widget pill(String label, int i) => GestureDetector(
           onTap: () => setState(() => _period = i),
@@ -51,7 +54,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
             child: Text(
               label,
               style: TextStyle(
-                fontFamily: 'Inter',
+                fontFamily: fontFamily,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: _period == i
@@ -86,7 +89,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
               Text(
                 value,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: textPrimary,
@@ -96,11 +99,11 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
               const SizedBox(height: 2),
               Text(label,
                   style: TextStyle(
-                      fontFamily: 'Inter', fontSize: 11, color: textSec)),
+                      fontFamily: fontFamily, fontSize: 11, color: textSec)),
               const SizedBox(height: AppDimens.xs),
               Text(sub,
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: fontFamily,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: accent,
@@ -115,7 +118,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
           child: Text(
             t,
             style: TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: fontFamily,
               fontSize: 15,
               fontWeight: FontWeight.w800,
               color: textPrimary,
@@ -141,7 +144,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                 Text(
                   label,
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: fontFamily,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: textPrimary,
@@ -151,7 +154,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                 Text(
                   '$count',
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: fontFamily,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: textPrimary,
@@ -161,7 +164,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                 Text(
                   '(${total > 0 ? (count / total * 100).toStringAsFixed(0) : 0}%)',
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: fontFamily,
                     fontSize: 12,
                     color: textSec,
                   ),
@@ -220,9 +223,9 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
               ),
             ),
             title: Text(
-              'Analytics',
+              l.analytics,
               style: TextStyle(
-                fontFamily: 'Inter',
+                fontFamily: fontFamily,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: textPrimary,
@@ -245,35 +248,35 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                 children: [
                   // Period selector
                   Row(children: [
-                    pill('Week', 0),
+                    pill(l.week, 0),
                     const SizedBox(width: AppDimens.sm),
-                    pill('Month', 1),
+                    pill(l.month, 1),
                     const SizedBox(width: AppDimens.sm),
-                    pill('Year', 2),
+                    pill(l.year, 2),
                   ]),
                   const SizedBox(height: AppDimens.xl),
 
                   // Stat cards row 1
                   Row(children: [
-                    statCard('Earnings', '575 LYD', '+18% vs last month',
+                    statCard(l.earnings, '575 LYD', '+18% vs last month',
                         AppColors.primaryGreen, Icons.trending_up_rounded),
                     const SizedBox(width: AppDimens.sm),
-                    statCard('Deliveries', '48', '+6 vs last month',
+                    statCard(l.deliveries, '48', '+6 vs last month',
                         AppColors.info, Icons.delivery_dining_rounded),
                   ]),
                   const SizedBox(height: AppDimens.sm),
 
                   // Stat cards row 2
                   Row(children: [
-                    statCard('Avg/Delivery', '11.98 LYD', 'per trip',
+                    statCard(l.avgPerDelivery, '11.98 LYD', 'per trip',
                         AppColors.warning, Icons.calculate_rounded),
                     const SizedBox(width: AppDimens.sm),
-                    statCard('Rating', '4.9 ★', 'from 127 reviews',
+                    statCard(l.rating, '4.9 ★', 'from 127 reviews',
                         AppColors.warning, Icons.star_rounded),
                   ]),
 
                   // Bar chart
-                  sectionTitle('Earnings This Week'),
+                  sectionTitle(l.earningsThisWeek),
                   Container(
                     padding: const EdgeInsets.all(AppDimens.base),
                     decoration: BoxDecoration(
@@ -303,7 +306,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                                   Text(
                                     _weeklyEarnings[i].toStringAsFixed(0),
                                     style: TextStyle(
-                                      fontFamily: 'Inter',
+                                      fontFamily: fontFamily,
                                       fontSize: 9,
                                       color: isToday
                                           ? AppColors.primaryGreen
@@ -335,11 +338,11 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                       const SizedBox(height: AppDimens.sm),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: _weekLabels
-                            .map((l) => Text(
-                                  l,
+                        children: weekLabels
+                            .map((lbl) => Text(
+                                  lbl,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
+                                    fontFamily: fontFamily,
                                     fontSize: 11,
                                     color: textSec,
                                   ),
@@ -350,7 +353,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                   ),
 
                   // Delivery status
-                  sectionTitle('Delivery Status'),
+                  sectionTitle(l.deliveryStatus),
                   Container(
                     decoration: BoxDecoration(
                       color: cardBg,
@@ -360,17 +363,17 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                     ),
                     child: Column(children: [
                       deliveryRow(
-                          'Completed', 42, 48, AppColors.success,
+                          l.completed, 42, 48, AppColors.success,
                           isFirst: true),
                       deliveryRow(
-                          'Cancelled', 4, 48, AppColors.error),
+                          l.cancelled, 4, 48, AppColors.error),
                       deliveryRow(
-                          'Failed', 2, 48, AppColors.warning),
+                          l.failed, 2, 48, AppColors.warning),
                     ]),
                   ),
 
                   // Distance breakdown
-                  sectionTitle('Distance Breakdown'),
+                  sectionTitle(l.distanceBreakdown),
                   Container(
                     padding: const EdgeInsets.all(AppDimens.base),
                     decoration: BoxDecoration(
@@ -381,7 +384,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                     ),
                     child: Column(children: [
                       _KmRow(
-                        label: 'Total km driven',
+                        label: l.totalKmDriven,
                         value: '312 km',
                         textPrimary: textPrimary,
                         textSec: textSec,
@@ -389,14 +392,14 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                         isFirst: true,
                       ),
                       _KmRow(
-                        label: 'Avg per delivery',
+                        label: l.avgPerDeliveryKm,
                         value: '6.5 km',
                         textPrimary: textPrimary,
                         textSec: textSec,
                         divider: divider,
                       ),
                       _KmRow(
-                        label: 'Longest trip',
+                        label: l.longestTrip,
                         value: '18.2 km',
                         textPrimary: textPrimary,
                         textSec: textSec,
@@ -436,6 +439,7 @@ class _KmRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppDimens.md),
       decoration: BoxDecoration(
@@ -448,7 +452,7 @@ class _KmRow extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: fontFamily,
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: textSec,
@@ -458,7 +462,7 @@ class _KmRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontFamily: 'Inter',
+            fontFamily: fontFamily,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: textPrimary,

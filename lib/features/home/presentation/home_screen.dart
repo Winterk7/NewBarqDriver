@@ -1,6 +1,7 @@
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/features/home/domain/driver_status.dart';
 import 'package:barq_driver/features/home/presentation/driver_menu_page.dart';
+import 'package:barq_driver/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
@@ -334,10 +335,11 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     final label = switch (status) {
-      DriverStatus.offline    => 'Offline',
-      DriverStatus.online     => 'Online',
-      DriverStatus.onDelivery => 'On Delivery',
+      DriverStatus.offline    => AppLocalizations.of(context)!.statusOffline,
+      DriverStatus.online     => AppLocalizations.of(context)!.statusOnline,
+      DriverStatus.onDelivery => AppLocalizations.of(context)!.statusOnDelivery,
     };
     final dotColor = switch (status) {
       DriverStatus.offline    => dark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
@@ -363,7 +365,7 @@ class _StatusPill extends StatelessWidget {
         children: [
           Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600, color: txtColor)),
+          Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: txtColor)),
         ],
       ),
     );
@@ -377,6 +379,7 @@ class _EarningsChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     final bgColor  = dark ? Colors.black.withValues(alpha: 0.75) : Colors.white;
     final txtColor = dark ? Colors.white : AppColors.textPrimaryLight;
     return Container(
@@ -399,7 +402,7 @@ class _EarningsChip extends StatelessWidget {
           Text(
             'LYD ${amount > 0 ? amount.toStringAsFixed(1) : "\u2013"}',
             style: TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: fontFamily,
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: txtColor,
@@ -462,6 +465,8 @@ class _OfflineSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l = AppLocalizations.of(context)!;
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDimens.xl,
@@ -500,9 +505,9 @@ class _OfflineSheet extends StatelessWidget {
           const SizedBox(height: AppDimens.lg),
 
           Text(
-            "You're offline",
+            l.youreOffline,
             style: TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: fontFamily,
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: cs.onSurface,
@@ -511,9 +516,9 @@ class _OfflineSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppDimens.xs),
           Text(
-            'Go online to start accepting delivery requests',
+            l.goOnlineSub,
             style: TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: fontFamily,
               fontSize: 14,
               color: cs.onSurface.withValues(alpha: 0.55),
             ),
@@ -538,10 +543,10 @@ class _OfflineSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
               ),
-              child: const Text(
-                'Go Online',
+              child: Text(
+                l.goOnline,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
@@ -574,6 +579,8 @@ class _OnlineSheetState extends State<_OnlineSheet> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l = AppLocalizations.of(context)!;
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDimens.xl, AppDimens.lg, AppDimens.xl, widget.bottomPad + AppDimens.lg,
@@ -617,9 +624,9 @@ class _OnlineSheetState extends State<_OnlineSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Searching for orders',
+                      l.searchingForOrders,
                       style: TextStyle(
-                        fontFamily: 'Inter',
+                        fontFamily: fontFamily,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: cs.onSurface,
@@ -627,9 +634,9 @@ class _OnlineSheetState extends State<_OnlineSheet> {
                       ),
                     ),
                     Text(
-                      "You'll be notified when an order is assigned",
+                      l.searchingForOrdersSub,
                       style: TextStyle(
-                        fontFamily: 'Inter',
+                        fontFamily: fontFamily,
                         fontSize: 12,
                         color: cs.onSurface.withValues(alpha: 0.50),
                       ),
@@ -659,10 +666,10 @@ class _OnlineSheetState extends State<_OnlineSheet> {
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
               ),
-              child: const Text(
-                'Go Offline',
+              child: Text(
+                l.goOffline,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
@@ -746,6 +753,7 @@ class _DeliverySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -790,7 +798,7 @@ class _DeliverySheet extends StatelessWidget {
               Text(
                 order.id,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 13,
                   color: cs.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w500,
@@ -808,8 +816,8 @@ class _DeliverySheet extends StatelessWidget {
                 ),
                 child: Text(
                   'LYD ${order.earnings.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
+                  style: TextStyle(
+                    fontFamily: fontFamily,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primaryGreen,
@@ -861,10 +869,10 @@ class _DeliverySheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
               ),
-              child: const Text(
-                'Mark as Delivered',
+              child: Text(
+                AppLocalizations.of(context)!.markAsDelivered,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
@@ -897,6 +905,7 @@ class _RouteRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -931,7 +940,7 @@ class _RouteRow extends StatelessWidget {
               Text(
                 pickupLabel,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -940,7 +949,7 @@ class _RouteRow extends StatelessWidget {
               Text(
                 pickupAddress,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                 ),
@@ -949,7 +958,7 @@ class _RouteRow extends StatelessWidget {
               Text(
                 customerName,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -958,7 +967,7 @@ class _RouteRow extends StatelessWidget {
               Text(
                 dropoffAddress,
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: fontFamily,
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
                 ),
@@ -978,6 +987,7 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimens.md,
@@ -995,7 +1005,7 @@ class _StatChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: fontFamily,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),

@@ -1,4 +1,5 @@
 import 'package:barq_driver/core/constants/app_dimens.dart';
+import 'package:barq_driver/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -18,24 +19,21 @@ class _OnboardingPageData {
   });
 }
 
-const _pages = [
+List<_OnboardingPageData> _buildPages(AppLocalizations l) => [
   _OnboardingPageData(
-    title: 'Accept deliveries\ninstantly',
-    subtitle:
-        'Get notified the moment an order is ready for pickup. Confirm with one tap and hit the road.',
-    accent: Color(0xFF0D9F6C),
+    title: l.onboarding1Title,
+    subtitle: l.onboarding1Sub,
+    accent: const Color(0xFF0D9F6C),
   ),
   _OnboardingPageData(
-    title: 'Navigate your\nroute',
-    subtitle:
-        'Turn-by-turn guidance keeps you moving fast. Deliver more, earn more, every single day.',
-    accent: Color(0xFFD97706),
+    title: l.onboarding2Title,
+    subtitle: l.onboarding2Sub,
+    accent: const Color(0xFFD97706),
   ),
   _OnboardingPageData(
-    title: 'Earn with every\ndelivery',
-    subtitle:
-        'Watch your earnings grow in real time. Withdraw to your wallet whenever you want.',
-    accent: Color(0xFF2563EB),
+    title: l.onboarding3Title,
+    subtitle: l.onboarding3Sub,
+    accent: const Color(0xFF2563EB),
   ),
 ];
 
@@ -133,8 +131,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final page = _pages[_current];
-    final isLast = _current == _pages.length - 1;
+    final l = AppLocalizations.of(context)!;
+    final pages = _buildPages(l);
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
+    final page = pages[_current];
+    final isLast = _current == pages.length - 1;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -236,10 +237,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       height: 195,
                       child: PageView.builder(
                         controller: _pageCtrl,
-                        itemCount: _pages.length,
+                        itemCount: pages.length,
                         onPageChanged: _onPageChanged,
                         itemBuilder: (_, i) {
-                          final p = _pages[i];
+                          final p = pages[i];
                           return Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppDimens.xl,
@@ -250,8 +251,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               children: [
                                 Text(
                                   p.title,
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
+                                  style: TextStyle(
+                                    fontFamily: fontFamily,
                                     fontSize: 36,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -263,7 +264,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                 Text(
                                   p.subtitle,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
+                                    fontFamily: fontFamily,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w400,
                                     color:
@@ -294,7 +295,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           // Dots
                           Row(
                             children: List.generate(
-                              _pages.length,
+                              pages.length,
                               (i) => AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
@@ -303,7 +304,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                 width: i == _current ? 28 : 8,
                                 decoration: BoxDecoration(
                                   color: i == _current
-                                      ? _pages[_current].accent
+                                      ? pages[_current].accent
                                       : Colors.white.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(
                                     AppDimens.radiusFull,
@@ -322,7 +323,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             width: double.infinity,
                             height: AppDimens.buttonHeight,
                             decoration: BoxDecoration(
-                              color: _pages[_current].accent,
+                              color: pages[_current].accent,
                               borderRadius: BorderRadius.circular(
                                   AppDimens.radiusMd),
                             ),
@@ -342,10 +343,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 200),
                                 child: Text(
-                                  isLast ? 'Get Started' : 'Continue',
+                                isLast ? l.getStarted : l.continueBtn,
                                   key: ValueKey(_current),
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
+                                  style: TextStyle(
+                                    fontFamily: fontFamily,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: -0.2,
@@ -366,16 +367,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               },
                               child: RichText(
                                 text: TextSpan(
-                                  text: 'Already have an account? ',
+                                  text: l.alreadyHaveAccount,
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
+                                    fontFamily: fontFamily,
                                     fontSize: 14,
                                     color: Colors.white
                                         .withValues(alpha: 0.5),
                                   ),
-                                  children: const [
+                                  children: [
                                     TextSpan(
-                                      text: 'Sign in',
+                                      text: l.signIn,
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -401,7 +402,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _nextPage() {
     HapticFeedback.lightImpact();
-    if (_current < _pages.length - 1) {
+    if (_current < _buildPages(AppLocalizations.of(context)!).length - 1) {
       _pageCtrl.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
