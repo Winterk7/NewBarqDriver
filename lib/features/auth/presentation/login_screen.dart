@@ -68,11 +68,30 @@ class _LoginScreenState extends State<LoginScreen>
     FocusScope.of(context).unfocus();
     setState(() => _loading = true);
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
+      final res = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      // Router refreshListenable handles navigation on auth state change
+
+      // Role check — only drivers can use this app
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('id', res.user!.id)
+          .maybeSingle();
+      final role = profile?['role'] as String?;
+      if (role != 'driver') {
+        await Supabase.instance.client.auth.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This account is not registered as a driver.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      // Router refreshListenable handles navigation
     } on AuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
