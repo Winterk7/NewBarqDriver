@@ -1,3 +1,4 @@
+import 'package:barq_driver/core/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -16,6 +17,7 @@ void main() async {
     anonKey:
         'sb_publishable_2kS_dsRp3aMu4Q1QzNDRHw_vO6hqPy4',
   );
+  await NotificationService.init();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const ProviderScope(child: BarqDriverApp()));
 }

@@ -1,5 +1,7 @@
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
+import 'package:barq_driver/core/services/location_service.dart';
+import 'package:barq_driver/core/services/notification_service.dart';
 import 'package:barq_driver/features/home/domain/driver_order.dart';
 import 'package:barq_driver/features/home/domain/driver_status.dart';
 import 'package:barq_driver/features/home/presentation/driver_menu_page.dart';
@@ -76,6 +78,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
     // Persist availability to Supabase so partner can filter online drivers.
     setDriverAvailability(_status != DriverStatus.offline);
+    // Start/stop GPS publishing.
+    if (_status != DriverStatus.offline) {
+      LocationService.start();
+    } else {
+      LocationService.stop();
+    }
     _sheetCtrl
       ..reset()
       ..forward();
@@ -141,10 +149,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           if (_activeOrder?.id != order.id ||
               _activeOrder?.status != order.status ||
               _status != DriverStatus.onDelivery) {
+            // Notify driver only on a brand-new assignment.
+            final isNewOrder = _activeOrder?.id != order.id;
             setState(() {
               _activeOrder = order;
               _status = DriverStatus.onDelivery;
             });
+            if (isNewOrder) {
+              NotificationService.showNewOrder(order.storeName);
+            }
             _sheetCtrl
               ..reset()
               ..forward();
