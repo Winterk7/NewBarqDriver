@@ -33,7 +33,7 @@ final driverActiveOrderProvider = StreamProvider<DriverOrder?>((ref) {
             .from('orders')
             .select('*, stores(name, address)')
             .eq('driver_id', userId)
-            .inFilter('status', ['accepted', 'picked_up'])
+            .inFilter('status', ['accepted', 'preparing', 'ready', 'picked_up'])
             .order('created_at', ascending: false)
             .limit(1);
 
