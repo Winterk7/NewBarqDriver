@@ -2,6 +2,7 @@ import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/core/providers/locale_provider.dart';
+import 'package:barq_driver/core/providers/driver_orders_provider.dart';
 import 'package:barq_driver/features/home/domain/driver_status.dart';
 import 'package:barq_driver/features/home/presentation/analytics_screen.dart';
 import 'package:barq_driver/l10n/app_localizations.dart';
@@ -372,7 +373,7 @@ class DriverMenuPage extends ConsumerWidget {
 }
 
 // Profile card
-class _ProfileCard extends StatelessWidget {
+class _ProfileCard extends ConsumerWidget {
   final DriverStatus status;
   final bool dark;
   final Color textPrimary;
@@ -382,9 +383,15 @@ class _ProfileCard extends StatelessWidget {
   const _ProfileCard({required this.status, required this.dark, required this.textPrimary, required this.textSec, required this.borderColor, required this.cardBg});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     final isOnline = status != DriverStatus.offline;
+    final profileAsync = ref.watch(driverProfileProvider);
+    final profile = profileAsync.valueOrNull;
+    final name = (profile?['full_name'] as String?)?.trim();
+    final phone = (profile?['phone'] as String?)?.trim() ?? '';
+    final initial = (name != null && name.isNotEmpty) ? name[0].toUpperCase() : 'D';
+    final displayName = (name != null && name.isNotEmpty) ? name : 'Driver';
     return Container(
       padding: const EdgeInsets.all(AppDimens.xl),
       decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(AppDimens.radiusXl), border: Border.all(color: borderColor)),
@@ -393,7 +400,7 @@ class _ProfileCard extends StatelessWidget {
           Container(
             width: 60, height: 60,
             decoration: BoxDecoration(color: dark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06), shape: BoxShape.circle, border: Border.all(color: borderColor, width: 2)),
-            child: Center(child: Text('D', style: TextStyle(fontFamily: fontFamily, fontSize: 22, fontWeight: FontWeight.w800, color: textPrimary))),
+            child: Center(child: Text(initial, style: TextStyle(fontFamily: fontFamily, fontSize: 22, fontWeight: FontWeight.w800, color: textPrimary))),
           ),
           Positioned(
             right: 0, bottom: 0,
@@ -409,9 +416,10 @@ class _ProfileCard extends StatelessWidget {
         ]),
         const SizedBox(width: AppDimens.base),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Driver', style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.3)),
+          Text(displayName, style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.3)),
           const SizedBox(height: 3),
-          Text('driver@barq.ly', style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: textSec)),
+          if (phone.isNotEmpty)
+            Text(phone, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: textSec)),
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

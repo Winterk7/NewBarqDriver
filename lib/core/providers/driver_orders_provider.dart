@@ -43,6 +43,36 @@ final driverActiveOrderProvider = StreamProvider<DriverOrder?>((ref) {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// driverProfileProvider
+//   Fetches the current driver's profile (full_name, phone, avatar_url).
+// ─────────────────────────────────────────────────────────────────────────────
+final driverProfileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return null;
+  final rows = await Supabase.instance.client
+      .from('profiles')
+      .select('full_name, phone, avatar_url')
+      .eq('id', userId)
+      .limit(1);
+  final list = rows as List<dynamic>;
+  return list.isEmpty ? null : list.first as Map<String, dynamic>;
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// setDriverAvailability
+//   Writes is_available to the driver's profile row so barq-partner can
+//   filter for online drivers when assigning orders.
+// ─────────────────────────────────────────────────────────────────────────────
+Future<void> setDriverAvailability(bool isAvailable) async {
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  if (userId == null) return;
+  await Supabase.instance.client
+      .from('profiles')
+      .update({'is_available': isAvailable})
+      .eq('id', userId);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // markOrderPickedUp
 //   Updates an order status from 'accepted' to 'picked_up'.
 // ─────────────────────────────────────────────────────────────────────────────

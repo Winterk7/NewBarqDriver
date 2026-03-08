@@ -74,6 +74,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _activeOrder = null;
       }
     });
+    // Persist availability to Supabase so partner can filter online drivers.
+    setDriverAvailability(_status != DriverStatus.offline);
     _sheetCtrl
       ..reset()
       ..forward();
