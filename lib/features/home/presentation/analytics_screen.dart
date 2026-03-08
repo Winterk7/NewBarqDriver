@@ -2,6 +2,7 @@ import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:barq_driver/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DriverAnalyticsScreen extends StatefulWidget {
   const DriverAnalyticsScreen({super.key});
@@ -14,8 +15,63 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
     with SingleTickerProviderStateMixin {
   int _period = 1; // 0=week 1=month 2=year
 
-  // Mock data
-  static const _weeklyEarnings = [45.0, 82.0, 61.0, 110.0, 94.0, 128.0, 55.0];
+  bool _loadingStats = false;
+  double _totalEarnings = 0;
+  int _deliveryCount = 0;
+  int _cancelledCount = 0;
+  List<double> _earningsByDay = List.filled(7, 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _loadingStats = true);
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) { setState(() => _loadingStats = false); return; }
+    final now = DateTime.now();
+    final since = _period == 0
+        ? now.subtract(const Duration(days: 7))
+        : _period == 1
+            ? now.subtract(const Duration(days: 30))
+            : now.subtract(const Duration(days: 365));
+    try {
+      final rows = await Supabase.instance.client
+          .from('orders')
+          .select('status, delivery_fee, created_at')
+          .eq('driver_id', userId)
+          .gte('created_at', since.toIso8601String())
+          .order('created_at');
+      double earnings = 0;
+      int delivered = 0;
+      int cancelled = 0;
+      final byDay = List<double>.filled(7, 0);
+      for (final row in (rows as List<dynamic>)) {
+        final status = row['status'] as String;
+        final fee = (row['delivery_fee'] as num?)?.toDouble() ?? 0;
+        final date = DateTime.parse(row['created_at'] as String).toLocal();
+        final dayIdx = (date.weekday - 1) % 7;
+        if (status == 'delivered') {
+          earnings += fee;
+          delivered++;
+          byDay[dayIdx] += fee;
+        } else if (status == 'cancelled') {
+          cancelled++;
+        }
+      }
+      setState(() {
+        _loadingStats = false;
+        _totalEarnings = earnings;
+        _deliveryCount = delivered;
+        _cancelledCount = cancelled;
+        _earningsByDay = byDay;
+      });
+    } catch (_) {
+      setState(() => _loadingStats = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +85,11 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
     final borderColor  = dark ? AppColors.dividerDark      : AppColors.dividerLight;
     final divider      = dark ? AppColors.dividerDark      : AppColors.dividerLight;
 
-    final maxBar = _weeklyEarnings.reduce((a, b) => a > b ? a : b);
+    final maxBar = _earningsByDay.reduce((a, b) => a > b ? a : b).clamp(1.0, double.infinity);
     final weekLabels = [l.dayMon, l.dayTue, l.dayWed, l.dayThu, l.dayFri, l.daySat, l.daySun];
 
     Widget pill(String label, int i) => GestureDetector(
-          onTap: () => setState(() => _period = i),
+          onTap: _loadingStats ? null : () { setState(() => _period = i); _loadData(); },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(
@@ -263,20 +319,20 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
 
                   // Stat cards row 1
                   Row(children: [
-                    statCard(l.earnings, '575 LYD', '+18% vs last month',
+                    statCard(l.earnings, '${_totalEarnings.toStringAsFixed(0)} LYD', '—',
                         AppColors.primaryGreen, Icons.trending_up_rounded),
                     const SizedBox(width: AppDimens.sm),
-                    statCard(l.deliveries, '48', '+6 vs last month',
+                    statCard(l.deliveries, '$_deliveryCount', '—',
                         AppColors.info, Icons.delivery_dining_rounded),
                   ]),
                   const SizedBox(height: AppDimens.sm),
 
                   // Stat cards row 2
                   Row(children: [
-                    statCard(l.avgPerDelivery, '11.98 LYD', 'per trip',
+                    statCard(l.avgPerDelivery, '${_deliveryCount > 0 ? (_totalEarnings / _deliveryCount).toStringAsFixed(2) : '0.00'} LYD', '—',
                         AppColors.warning, Icons.calculate_rounded),
                     const SizedBox(width: AppDimens.sm),
-                    statCard(l.rating, '4.9 ★', 'from 127 reviews',
+                    statCard(l.rating, '—', '—',
                         AppColors.warning, Icons.star_rounded),
                   ]),
 
@@ -297,10 +353,10 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                           crossAxisAlignment: CrossAxisAlignment.end,
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: List.generate(
-                            _weeklyEarnings.length,
+                            _earningsByDay.length,
                             (i) {
                               const barMaxH = 90.0;
-                              final ratio = (_weeklyEarnings[i] / maxBar)
+                              final ratio = (_earningsByDay[i] / maxBar)
                                   .clamp(0.08, 1.0);
                               final barH = barMaxH * ratio;
                               final isToday = i == DateTime.now().weekday - 1;
@@ -309,7 +365,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    _weeklyEarnings[i].toStringAsFixed(0),
+                                    _earningsByDay[i] > 0 ? _earningsByDay[i].toStringAsFixed(0) : '',
                                     style: TextStyle(
                                       fontFamily: fontFamily,
                                       fontSize: 9,
@@ -368,12 +424,12 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                     ),
                     child: Column(children: [
                       deliveryRow(
-                          l.completed, 42, 48, AppColors.success,
+                          l.completed, _deliveryCount, _deliveryCount + _cancelledCount, AppColors.success,
                           isFirst: true),
                       deliveryRow(
-                          l.cancelled, 4, 48, AppColors.error),
+                          l.cancelled, _cancelledCount, _deliveryCount + _cancelledCount, AppColors.error),
                       deliveryRow(
-                          l.failed, 2, 48, AppColors.warning),
+                          l.failed, 0, _deliveryCount + _cancelledCount, AppColors.warning),
                     ]),
                   ),
 
