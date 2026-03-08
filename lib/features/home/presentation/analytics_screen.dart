@@ -215,10 +215,15 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                       : AppColors.dividerLight,
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
-                child: Icon(
-                  (Directionality.of(context) == TextDirection.rtl ? Icons.arrow_forward_ios_rounded : Icons.arrow_back_ios_new_rounded),
-                  size: AppDimens.iconSm,
-                  color: textPrimary,
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Icon(
+                    Localizations.localeOf(context).languageCode == 'ar'
+                        ? Icons.arrow_forward_ios_rounded
+                        : Icons.arrow_back_ios_new_rounded,
+                    size: AppDimens.iconSm,
+                    color: textPrimary,
+                  ),
                 ),
               ),
             ),
