@@ -86,5 +86,6 @@
   "goOffline": "Go Offline",
   "searchingForOrders": "Searching for orders",
   "searchingForOrdersSub": "You'll be notified when an order is assigned",
-  "markAsDelivered": "Mark as Delivered"
+  "markAsDelivered": "Mark as Delivered",
+  "pickedUpFromStore": "Picked Up — Heading to Customer"
 }

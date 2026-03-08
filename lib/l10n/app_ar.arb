@@ -86,5 +86,6 @@
   "goOffline": "قطع الاتصال",
   "searchingForOrders": "جاري البحث عن طلبات",
   "searchingForOrdersSub": "سيتم إشعارك فور تعيين طلب",
-  "markAsDelivered": "تأكيد التسليم"
+  "markAsDelivered": "تأكيد التسليم",
+  "pickedUpFromStore": "تم الاستلام — في الطريق للعميل"
 }

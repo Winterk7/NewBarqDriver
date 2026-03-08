@@ -242,4 +242,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markAsDelivered => 'Mark as Delivered';
+
+  @override
+  String get pickedUpFromStore => 'Picked Up — Heading to Customer';
 }

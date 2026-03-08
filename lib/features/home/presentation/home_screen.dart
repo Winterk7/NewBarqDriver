@@ -1,4 +1,6 @@
 import 'package:barq_driver/core/theme/theme_provider.dart';
+import 'package:barq_driver/core/providers/driver_orders_provider.dart';
+import 'package:barq_driver/features/home/domain/driver_order.dart';
 import 'package:barq_driver/features/home/domain/driver_status.dart';
 import 'package:barq_driver/features/home/presentation/driver_menu_page.dart';
 import 'package:barq_driver/l10n/app_localizations.dart';
@@ -19,29 +21,6 @@ String _mapboxTile(String style) =>
     'https://api.mapbox.com/styles/v1/mapbox/$style/tiles/256/{z}/{x}/{y}@2x'
     '?access_token=$_kMapboxToken';
 
-// ── Mock active order ─────────────────────────────────────────────────────────
-class _ActiveOrder {
-  final String id;
-  final String customerName;
-  final String pickupAddress;
-  final String dropoffAddress;
-  final String storeName;
-  final double earnings;
-  final double distanceKm;
-  final int estimatedMins;
-
-  const _ActiveOrder({
-    required this.id,
-    required this.customerName,
-    required this.pickupAddress,
-    required this.dropoffAddress,
-    required this.storeName,
-    required this.earnings,
-    required this.distanceKm,
-    required this.estimatedMins,
-  });
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -58,7 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   final _mapCtrl = MapController();
   DriverStatus _status = DriverStatus.offline;
-  _ActiveOrder? _activeOrder;
+  DriverOrder? _activeOrder;
 
   // Bottom sheet animation
   late final AnimationController _sheetCtrl;
@@ -88,10 +67,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void _toggleOnline() {
     HapticFeedback.mediumImpact();
     setState(() {
-      _status = _status == DriverStatus.offline
-          ? DriverStatus.online
-          : DriverStatus.offline;
-      _activeOrder = null;
+      if (_status == DriverStatus.offline) {
+        _status = DriverStatus.online;
+      } else {
+        _status = DriverStatus.offline;
+        _activeOrder = null;
+      }
     });
     _sheetCtrl
       ..reset()
@@ -100,6 +81,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _completeDelivery() {
     HapticFeedback.mediumImpact();
+    if (_activeOrder != null) {
+      markOrderDelivered(_activeOrder!.id); // fire-and-forget; stream clears the order
+    }
     setState(() {
       _activeOrder = null;
       _status = DriverStatus.online;
@@ -107,6 +91,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _sheetCtrl
       ..reset()
       ..forward();
+  }
+
+  void _markPickedUp() {
+    HapticFeedback.mediumImpact();
+    if (_activeOrder != null) {
+      markOrderPickedUp(_activeOrder!.id); // fire-and-forget; stream updates status
+    }
   }
 
   void _openMenu() {
@@ -137,6 +128,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final appIsDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     // Map tile follows theme only — online/offline status does not affect it
     final tileStyle = appIsDark ? 'dark-v11' : 'streets-v12';
+
+    // ── Live order listener ────────────────────────────────────────────────
+    // React to Supabase realtime: when an order is assigned/updated react here.
+    ref.listen<AsyncValue<DriverOrder?>>(driverActiveOrderProvider, (_, next) {
+      next.whenData((order) {
+        if (!mounted) return;
+        if (order != null && _status != DriverStatus.offline) {
+          // New or updated active order
+          if (_activeOrder?.id != order.id ||
+              _activeOrder?.status != order.status ||
+              _status != DriverStatus.onDelivery) {
+            setState(() {
+              _activeOrder = order;
+              _status = DriverStatus.onDelivery;
+            });
+            _sheetCtrl
+              ..reset()
+              ..forward();
+          } else {
+            // Update status silently (e.g. accepted → picked_up)
+            setState(() => _activeOrder = order);
+          }
+        } else if (order == null && _status == DriverStatus.onDelivery) {
+          // Order completed or unassigned
+          setState(() {
+            _activeOrder = null;
+            _status = DriverStatus.online;
+          });
+          _sheetCtrl
+            ..reset()
+            ..forward();
+        }
+      });
+    });
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -276,6 +301,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         return _DeliverySheet(
           order: _activeOrder!,
           bottomPad: bottomPad,
+          onPickedUp: _markPickedUp,
           onComplete: _completeDelivery,
         );
     }
@@ -742,12 +768,14 @@ class _BouncingDotsState extends State<_BouncingDots>
 }
 
 class _DeliverySheet extends StatelessWidget {
-  final _ActiveOrder order;
+  final DriverOrder order;
   final double bottomPad;
+  final VoidCallback onPickedUp;
   final VoidCallback onComplete;
   const _DeliverySheet({
     required this.order,
     required this.bottomPad,
+    required this.onPickedUp,
     required this.onComplete,
   });
 
@@ -839,28 +867,24 @@ class _DeliverySheet extends StatelessWidget {
           const SizedBox(height: AppDimens.md),
 
           // Stats row
-          Row(
-            children: [
-              _StatChip(
-                icon: Icons.straighten_rounded,
-                label: '${order.distanceKm} km',
-              ),
-              const SizedBox(width: AppDimens.sm),
-              _StatChip(
-                icon: Icons.schedule_rounded,
-                label: '${order.estimatedMins} min',
-              ),
-            ],
-          ),
+          if (order.earnings > 0)
+            Row(
+              children: [
+                _StatChip(
+                  icon: Icons.bolt_rounded,
+                  label: 'LYD ${order.earnings.toStringAsFixed(2)}',
+                ),
+              ],
+            ),
 
           const SizedBox(height: AppDimens.lg),
 
-          // Complete delivery button
+          // Action button — changes based on current delivery stage
           SizedBox(
             width: double.infinity,
             height: AppDimens.buttonHeight,
             child: ElevatedButton(
-              onPressed: onComplete,
+              onPressed: order.isPickedUp ? onComplete : onPickedUp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
                 foregroundColor: Colors.white,
@@ -870,7 +894,9 @@ class _DeliverySheet extends StatelessWidget {
                 ),
               ),
               child: Text(
-                AppLocalizations.of(context)!.markAsDelivered,
+                order.isPickedUp
+                    ? AppLocalizations.of(context)!.markAsDelivered
+                    : AppLocalizations.of(context)!.pickedUpFromStore,
                 style: TextStyle(
                   fontFamily: fontFamily,
                   fontSize: 16,

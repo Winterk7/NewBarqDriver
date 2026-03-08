@@ -242,4 +242,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get markAsDelivered => 'تأكيد التسليم';
+
+  @override
+  String get pickedUpFromStore => 'تم الاستلام — في الطريق للعميل';
 }

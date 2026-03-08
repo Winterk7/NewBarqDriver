@@ -568,6 +568,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark as Delivered'**
   String get markAsDelivered;
+
+  /// No description provided for @pickedUpFromStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Picked Up — Heading to Customer'**
+  String get pickedUpFromStore;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
