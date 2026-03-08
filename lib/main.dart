@@ -17,9 +17,14 @@ void main() async {
     anonKey:
         'sb_publishable_2kS_dsRp3aMu4Q1QzNDRHw_vO6hqPy4',
   );
-  await NotificationService.init();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const ProviderScope(child: BarqDriverApp()));
+
+  // Init after first frame — avoids flutter_local_notifications platform-channel
+  // crash when the engine resets during hot restart.
+  WidgetsBinding.instance.addPostFrameCallback(
+    (_) => NotificationService.init().ignore(),
+  );
 }
 
 class BarqDriverApp extends ConsumerWidget {
