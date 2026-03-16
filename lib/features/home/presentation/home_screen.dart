@@ -20,7 +20,7 @@ const _kMapboxToken =
     '.7zvME7NODb4xyJozscm5JQ';
 
 String _mapboxTile(String style) =>
-    'https://api.mapbox.com/styles/v1/mapbox/$style/tiles/256/{z}/{x}/{y}@2x'
+    'https://api.mapbox.com/styles/v1/mapbox/$style/tiles/512/{z}/{x}/{y}'
     '?access_token=$_kMapboxToken';
 
 // ─────────────────────────────────────────────────────────────────────────────
