@@ -242,8 +242,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 TileLayer(
                   urlTemplate: _mapboxTile(tileStyle),
                   userAgentPackageName: 'com.barq.driver',
-                  retinaMode: true,
-                  maxZoom: 19,
+                  maxNativeZoom: 19,
+                  maxZoom: 22,
                   keepBuffer: 3,
                   panBuffer: 1,
                   // Silently swallow tile-fetch errors — shows blank tiles
@@ -392,10 +392,8 @@ class _DriverMarker extends StatefulWidget {
 class _DriverMarkerState extends State<_DriverMarker>
     with TickerProviderStateMixin {
   late final AnimationController _pulseCtrl;
-  late final AnimationController _floatCtrl;
   late final Animation<double> _pulseScale;
   late final Animation<double> _pulseOpacity;
-  late final Animation<double> _floatY;
 
   @override
   void initState() {
@@ -404,33 +402,24 @@ class _DriverMarkerState extends State<_DriverMarker>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    _floatCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat(reverse: true);
-
     _pulseScale = Tween<double>(begin: 1.0, end: 2.4).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut),
     );
     _pulseOpacity = Tween<double>(begin: 0.55, end: 0.0).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut),
     );
-    _floatY = Tween<double>(begin: -2.5, end: 2.5).animate(
-      CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut),
-    );
   }
 
   @override
   void dispose() {
     _pulseCtrl.dispose();
-    _floatCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([_pulseCtrl, _floatCtrl]),
+      animation: _pulseCtrl,
       builder: (context, _) => SizedBox(
         width: 80,
         height: 90,
@@ -473,13 +462,10 @@ class _DriverMarkerState extends State<_DriverMarker>
                 ),
               ),
             ),
-            // Floating car (translated on Y axis)
-            Transform.translate(
-              offset: Offset(0, _floatY.value),
-              child: CustomPaint(
-                size: const Size(44, 66),
-                painter: _CarPainter(isOnline: widget.isOnline),
-              ),
+            // Car marker (grounded — no float)
+            CustomPaint(
+              size: const Size(44, 66),
+              painter: _CarPainter(isOnline: widget.isOnline),
             ),
           ],
         ),
