@@ -12,6 +12,7 @@ import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 // ── Mapbox tile helper ─────────────────────────────────────────────────────────
@@ -56,6 +57,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       begin: const Offset(0, 1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _sheetCtrl, curve: Curves.easeOutCubic));
+
+    // Wire notification router + register FCM token now that user is authenticated.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.router = GoRouter.of(context);
+      NotificationService.initFCM().ignore();
+    });
   }
 
   @override

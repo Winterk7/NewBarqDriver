@@ -1,4 +1,6 @@
 import 'package:barq_driver/core/services/notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -12,6 +14,13 @@ import 'package:barq_driver/l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase — graceful: skip if google-services / GoogleService-Info not present
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  } catch (_) {}
+
   await Supabase.initialize(
     url: 'https://hqhifevvyvmelmsoarya.supabase.co',
     anonKey:
