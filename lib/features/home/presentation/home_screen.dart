@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
@@ -402,10 +401,10 @@ class _DriverMarkerState extends State<_DriverMarker>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    _pulseScale = Tween<double>(begin: 1.0, end: 2.4).animate(
+    _pulseScale = Tween<double>(begin: 1.0, end: 2.6).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut),
     );
-    _pulseOpacity = Tween<double>(begin: 0.55, end: 0.0).animate(
+    _pulseOpacity = Tween<double>(begin: 0.5, end: 0.0).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut),
     );
   }
@@ -418,54 +417,87 @@ class _DriverMarkerState extends State<_DriverMarker>
 
   @override
   Widget build(BuildContext context) {
+    final color = widget.isOnline ? const Color(0xFF00C853) : const Color(0xFF757575);
     return AnimatedBuilder(
       animation: _pulseCtrl,
       builder: (context, _) => SizedBox(
-        width: 80,
-        height: 90,
+        width: 64,
+        height: 64,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Pulsing glow ring (only when online)
+            // Pulsing ring — only when online
             if (widget.isOnline)
               Transform.scale(
                 scale: _pulseScale.value,
                 child: Container(
-                  width: 42,
-                  height: 42,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.primaryGreen
-                          .withValues(alpha: _pulseOpacity.value),
+                      color: color.withValues(alpha: _pulseOpacity.value),
                       width: 2,
                     ),
                   ),
                 ),
               ),
-            // Drop shadow ellipse
+            // Pin shadow
             Positioned(
-              bottom: 4,
+              bottom: 0,
               child: Container(
-                width: 38,
-                height: 10,
+                width: 20,
+                height: 6,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.black.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.black.withValues(alpha: 0.22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.20),
-                      blurRadius: 8,
-                      spreadRadius: 2,
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 6,
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
               ),
             ),
-            // Car marker (grounded — no float)
-            CustomPaint(
-              size: const Size(44, 66),
-              painter: _CarPainter(isOnline: widget.isOnline),
+            // Marker body — circle with car icon
+            Positioned(
+              top: 0,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.45),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.directions_car_filled_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+            ),
+            // Bottom pointer triangle
+            Positioned(
+              bottom: 4,
+              child: CustomPaint(
+                size: const Size(12, 8),
+                painter: _PinTipPainter(color: color),
+              ),
             ),
           ],
         ),
@@ -474,278 +506,25 @@ class _DriverMarkerState extends State<_DriverMarker>
   }
 }
 
-/// Google-Maps-style 3-D perspective car marker.
-class _CarPainter extends CustomPainter {
-  final bool isOnline;
-  const _CarPainter({required this.isOnline});
-
+/// Small downward triangle for the pin tip.
+class _PinTipPainter extends CustomPainter {
+  final Color color;
+  const _PinTipPainter({required this.color});
   @override
   void paint(Canvas canvas, Size s) {
-    final w = s.width;
-    final h = s.height;
-
-    // ── Perspective ground shadow (offset bottom-right = light from top-left) ───
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.57, h * 0.93), width: w * 0.88, height: h * 0.12),
-      Paint()
-        ..color = Colors.black.withValues(alpha: 0.35)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9),
-    );
-
-    // ── Online underglow (green neon underneath) ─────────────────────────
-    if (isOnline) {
-      canvas.drawOval(
-        Rect.fromCenter(center: Offset(w * 0.50, h * 0.54), width: w * 0.80, height: h * 0.48),
-        Paint()
-          ..color = const Color(0xFF00C853).withValues(alpha: 0.40)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
-      );
-    }
-
-    // ── Car body ─────────────────────────────────────────────────────────
-    final bodyPath = Path()
-      ..moveTo(w * 0.20, h * 0.10)
-      ..lineTo(w * 0.80, h * 0.10)
-      ..quadraticBezierTo(w * 0.93, h * 0.11, w * 0.93, h * 0.24)
-      ..lineTo(w * 0.93, h * 0.79)
-      ..quadraticBezierTo(w * 0.93, h * 0.92, w * 0.78, h * 0.93)
-      ..lineTo(w * 0.22, h * 0.93)
-      ..quadraticBezierTo(w * 0.07, h * 0.92, w * 0.07, h * 0.79)
-      ..lineTo(w * 0.07, h * 0.24)
-      ..quadraticBezierTo(w * 0.07, h * 0.11, w * 0.20, h * 0.10)
-      ..close();
-    canvas.drawPath(
-      bodyPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: const [Color(0xFF2C2C2C), Color(0xFF111111), Color(0xFF080808)],
-          stops: const [0.0, 0.55, 1.0],
-        ).createShader(Rect.fromLTWH(0, 0, w, h)),
-    );
-
-    // ── Left depth panel (darker = shadow side) ──────────────────────────
     canvas.drawPath(
       Path()
-        ..moveTo(w * 0.07, h * 0.24)
-        ..lineTo(w * 0.07, h * 0.79)
-        ..quadraticBezierTo(w * 0.07, h * 0.92, w * 0.22, h * 0.93)
-        ..lineTo(w * 0.27, h * 0.93)
-        ..lineTo(w * 0.27, h * 0.79)
-        ..lineTo(w * 0.15, h * 0.77)
-        ..lineTo(w * 0.15, h * 0.26)
-        ..lineTo(w * 0.27, h * 0.18)
-        ..lineTo(w * 0.22, h * 0.10)
-        ..quadraticBezierTo(w * 0.07, h * 0.11, w * 0.07, h * 0.24)
+        ..moveTo(0, 0)
+        ..lineTo(s.width, 0)
+        ..lineTo(s.width / 2, s.height)
         ..close(),
-      Paint()..color = const Color(0xFF050505),
-    );
-
-    // ── Right depth panel (slightly lighter = light side) ────────────────
-    canvas.drawPath(
-      Path()
-        ..moveTo(w * 0.93, h * 0.24)
-        ..lineTo(w * 0.93, h * 0.79)
-        ..quadraticBezierTo(w * 0.93, h * 0.92, w * 0.78, h * 0.93)
-        ..lineTo(w * 0.73, h * 0.93)
-        ..lineTo(w * 0.73, h * 0.79)
-        ..lineTo(w * 0.85, h * 0.77)
-        ..lineTo(w * 0.85, h * 0.26)
-        ..lineTo(w * 0.73, h * 0.18)
-        ..lineTo(w * 0.78, h * 0.10)
-        ..quadraticBezierTo(w * 0.93, h * 0.11, w * 0.93, h * 0.24)
-        ..close(),
-      Paint()..color = const Color(0xFF1C1C1C),
-    );
-
-    // ── Wheel arches ─────────────────────────────────────────────────────
-    for (final c in [
-      Offset(w * 0.16, h * 0.27), Offset(w * 0.84, h * 0.27),
-      Offset(w * 0.16, h * 0.76), Offset(w * 0.84, h * 0.76),
-    ]) {
-      canvas.drawOval(
-        Rect.fromCenter(center: c, width: w * 0.22, height: h * 0.145),
-        Paint()..color = const Color(0xFF040404),
-      );
-    }
-
-    // ── Wheels + rims + spokes ────────────────────────────────────────────
-    final wheelCenters = [
-      Offset(w * 0.16, h * 0.27), Offset(w * 0.84, h * 0.27),
-      Offset(w * 0.16, h * 0.76), Offset(w * 0.84, h * 0.76),
-    ];
-    for (final c in wheelCenters) {
-      // Tyre
-      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.19, height: h * 0.125),
-          Paint()..color = const Color(0xFF0C0C0C));
-      // Rim
-      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.11, height: h * 0.073),
-          Paint()..color = const Color(0xFF3C3C3C));
-      // Spokes
-      final sp = Paint()..color = const Color(0xFF4E4E4E)..strokeWidth = 0.9..style = PaintingStyle.stroke;
-      for (int i = 0; i < 4; i++) {
-        final a = i * pi / 4;
-        canvas.drawLine(
-          c + Offset(w * 0.038 * cos(a), h * 0.025 * sin(a)),
-          c - Offset(w * 0.038 * cos(a), h * 0.025 * sin(a)),
-          sp,
-        );
-      }
-      // Hub
-      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.038, height: h * 0.025),
-          Paint()..color = const Color(0xFF1A1A1A));
-    }
-
-    // ── Roof panel ───────────────────────────────────────────────────────
-    final roofPath = Path()
-      ..moveTo(w * 0.27, h * 0.23)
-      ..lineTo(w * 0.73, h * 0.23)
-      ..quadraticBezierTo(w * 0.81, h * 0.24, w * 0.79, h * 0.33)
-      ..lineTo(w * 0.79, h * 0.66)
-      ..quadraticBezierTo(w * 0.79, h * 0.69, w * 0.73, h * 0.70)
-      ..lineTo(w * 0.27, h * 0.70)
-      ..quadraticBezierTo(w * 0.21, h * 0.69, w * 0.21, h * 0.66)
-      ..lineTo(w * 0.21, h * 0.33)
-      ..quadraticBezierTo(w * 0.19, h * 0.24, w * 0.27, h * 0.23)
-      ..close();
-    canvas.drawPath(
-      roofPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: const [Color(0xFF303030), Color(0xFF191919)],
-        ).createShader(Rect.fromLTWH(w * 0.20, h * 0.22, w * 0.60, h * 0.49)),
-    );
-
-    // ── Sunroof glass ────────────────────────────────────────────────────
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.30, h * 0.29, w * 0.40, h * 0.24), const Radius.circular(3)),
-      Paint()..color = const Color(0xFF0C1520).withValues(alpha: 0.95),
-    );
-    // Sunroof glare sliver
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.31, h * 0.295, w * 0.16, h * 0.095), const Radius.circular(2)),
-      Paint()..color = Colors.white.withValues(alpha: 0.10),
-    );
-
-    // ── Front windshield ─────────────────────────────────────────────────
-    final wsRect = Rect.fromLTWH(w * 0.24, h * 0.23, w * 0.52, h * 0.17);
-    canvas.drawPath(
-      Path()
-        ..moveTo(w * 0.24, h * 0.23)
-        ..lineTo(w * 0.76, h * 0.23)
-        ..lineTo(w * 0.77, h * 0.38)
-        ..lineTo(w * 0.23, h * 0.38)
-        ..close(),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [const Color(0xFF5A8EB5).withValues(alpha: 0.90), const Color(0xFF2A5070).withValues(alpha: 0.90)],
-        ).createShader(wsRect),
-    );
-    // Windshield glare (left half brighter)
-    canvas.drawPath(
-      Path()
-        ..moveTo(w * 0.26, h * 0.23)
-        ..lineTo(w * 0.51, h * 0.23)
-        ..lineTo(w * 0.50, h * 0.37)
-        ..lineTo(w * 0.24, h * 0.37)
-        ..close(),
-      Paint()..color = Colors.white.withValues(alpha: 0.20),
-    );
-
-    // ── Rear window ──────────────────────────────────────────────────────
-    canvas.drawPath(
-      Path()
-        ..moveTo(w * 0.25, h * 0.54)
-        ..lineTo(w * 0.75, h * 0.54)
-        ..lineTo(w * 0.75, h * 0.67)
-        ..lineTo(w * 0.25, h * 0.67)
-        ..close(),
-      Paint()..color = const Color(0xFF2A4A60).withValues(alpha: 0.85),
-    );
-
-    // ── Door crease line ─────────────────────────────────────────────────
-    canvas.drawLine(
-      Offset(w * 0.13, h * 0.48), Offset(w * 0.87, h * 0.48),
-      Paint()..color = Colors.black.withValues(alpha: 0.60)..strokeWidth = 0.8,
-    );
-    // Door handles
-    for (final x in [w * 0.10, w * 0.85]) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(x, h * 0.495, w * 0.055, h * 0.020), const Radius.circular(2)),
-        Paint()..color = Colors.white.withValues(alpha: 0.18),
-      );
-    }
-
-    // ── LED Headlights ───────────────────────────────────────────────────
-    if (isOnline) {
-      // Wide LED glow
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, w, h * 0.16),
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [const Color(0xFFFFE566).withValues(alpha: 0.60), Colors.transparent],
-          ).createShader(Rect.fromLTWH(0, 0, w, h * 0.16)),
-      );
-    }
-    final hlColor = isOnline ? const Color(0xFFFFE882) : const Color(0xFF2E2E2E);
-    // Main LED bars
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.115, w * 0.23, h * 0.042), const Radius.circular(3)),
-        Paint()..color = hlColor);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.67, h * 0.115, w * 0.23, h * 0.042), const Radius.circular(3)),
-        Paint()..color = hlColor);
-    // DRL accent strip (only online)
-    if (isOnline) {
-      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.156, w * 0.23, h * 0.017), const Radius.circular(1)),
-          Paint()..color = Colors.white.withValues(alpha: 0.50));
-      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.67, h * 0.156, w * 0.23, h * 0.017), const Radius.circular(1)),
-          Paint()..color = Colors.white.withValues(alpha: 0.50));
-    }
-
-    // ── LED Taillights (L-shaped) ────────────────────────────────────────
-    final tColor = isOnline ? const Color(0xFFFF2222) : const Color(0xFF3A1212);
-    if (isOnline) {
-      for (final cx in [w * 0.215, w * 0.785]) {
-        canvas.drawOval(
-          Rect.fromCenter(center: Offset(cx, h * 0.890), width: w * 0.28, height: h * 0.058),
-          Paint()..color = const Color(0xFFFF2222).withValues(alpha: 0.38)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-        );
-      }
-    }
-    // L-shape: horizontal bar
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.865, w * 0.21, h * 0.038), const Radius.circular(2)),
-        Paint()..color = tColor);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.69, h * 0.865, w * 0.21, h * 0.038), const Radius.circular(2)),
-        Paint()..color = tColor);
-    // L-shape: vertical tab
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.852, w * 0.07, h * 0.054), const Radius.circular(2)),
-        Paint()..color = tColor);
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.83, h * 0.852, w * 0.07, h * 0.054), const Radius.circular(2)),
-        Paint()..color = tColor);
-
-    // ── Specular top-left highlight (metallic sheen) ──────────────────────
-    canvas.drawPath(
-      bodyPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.centerRight,
-          colors: [Colors.white.withValues(alpha: 0.11), Colors.transparent],
-          stops: const [0.0, 0.55],
-        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+      Paint()..color = color,
     );
   }
 
   @override
-  bool shouldRepaint(_CarPainter old) => old.isOnline != isOnline;
+  bool shouldRepaint(_PinTipPainter old) => old.color != color;
 }
-
 
 // ── Top-bar widgets ───────────────────────────────────────────────────────────
 
