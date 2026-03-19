@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "913705336911",
+    "project_id": "barq-partner",
+    "storage_bucket": "barq-partner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913705336911:android:fefd8bad4ef5ca6e71ea3a",
+        "android_client_info": {
+          "package_name": "com.barq.barq"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7aDKBhehtUUzWkPg7soiclW34UPXa0UM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913705336911:android:968844f673d5ae6371ea3a",
+        "android_client_info": {
+          "package_name": "com.barq.barq_driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7aDKBhehtUUzWkPg7soiclW34UPXa0UM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913705336911:android:ea130fb2d314ca0271ea3a",
+        "android_client_info": {
+          "package_name": "com.barq.barq_partner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7aDKBhehtUUzWkPg7soiclW34UPXa0UM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
