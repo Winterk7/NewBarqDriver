@@ -87,5 +87,24 @@
   "searchingForOrders": "Searching for orders",
   "searchingForOrdersSub": "You'll be notified when an order is assigned",
   "markAsDelivered": "Mark as Delivered",
-  "pickedUpFromStore": "Picked Up — Heading to Customer"
+  "pickedUpFromStore": "Picked Up — Heading to Customer",
+
+  "logOut": "Log Out",
+  "logOutTitle": "Log out?",
+  "logOutSub": "You will need to sign in again to access the app.",
+  "profile": "Profile",
+  "accountSection": "Account",
+  "notifications": "Notifications",
+  "changePassword": "Change Password",
+  "helpCenter": "Help Center",
+  "contactUs": "Contact Us",
+  "rateTheApp": "Rate the App",
+  "termsOfService": "Terms of Service",
+  "privacyPolicy": "Privacy Policy",
+  "legalSection": "Legal",
+  "totalDeliveries": "Total Deliveries",
+  "onBarqSince": "On Barq Since",
+  "system": "System",
+  "light": "Light",
+  "dark": "Dark"
 }

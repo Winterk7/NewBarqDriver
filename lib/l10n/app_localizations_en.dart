@@ -245,4 +245,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pickedUpFromStore => 'Picked Up — Heading to Customer';
+
+  @override
+  String get logOut => 'Log Out';
+
+  @override
+  String get logOutTitle => 'Log out?';
+
+  @override
+  String get logOutSub => 'You will need to sign in again to access the app.';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get accountSection => 'Account';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get changePassword => 'Change Password';
+
+  @override
+  String get helpCenter => 'Help Center';
+
+  @override
+  String get contactUs => 'Contact Us';
+
+  @override
+  String get rateTheApp => 'Rate the App';
+
+  @override
+  String get termsOfService => 'Terms of Service';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get legalSection => 'Legal';
+
+  @override
+  String get totalDeliveries => 'Total Deliveries';
+
+  @override
+  String get onBarqSince => 'On Barq Since';
+
+  @override
+  String get system => 'System';
+
+  @override
+  String get light => 'Light';
+
+  @override
+  String get dark => 'Dark';
 }

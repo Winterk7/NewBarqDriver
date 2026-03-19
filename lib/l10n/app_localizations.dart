@@ -574,6 +574,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Picked Up — Heading to Customer'**
   String get pickedUpFromStore;
+
+  /// No description provided for @logOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Out'**
+  String get logOut;
+
+  /// No description provided for @logOutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out?'**
+  String get logOutTitle;
+
+  /// No description provided for @logOutSub.
+  ///
+  /// In en, this message translates to:
+  /// **'You will need to sign in again to access the app.'**
+  String get logOutSub;
+
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// No description provided for @accountSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountSection;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
+
+  /// No description provided for @helpCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Help Center'**
+  String get helpCenter;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get contactUs;
+
+  /// No description provided for @rateTheApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the App'**
+  String get rateTheApp;
+
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @legalSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legalSection;
+
+  /// No description provided for @totalDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Deliveries'**
+  String get totalDeliveries;
+
+  /// No description provided for @onBarqSince.
+  ///
+  /// In en, this message translates to:
+  /// **'On Barq Since'**
+  String get onBarqSince;
+
+  /// No description provided for @system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get system;
+
+  /// No description provided for @light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get light;
+
+  /// No description provided for @dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get dark;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

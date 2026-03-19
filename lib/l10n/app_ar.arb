@@ -87,5 +87,24 @@
   "searchingForOrders": "جاري البحث عن طلبات",
   "searchingForOrdersSub": "سيتم إشعارك فور تعيين طلب",
   "markAsDelivered": "تأكيد التسليم",
-  "pickedUpFromStore": "تم الاستلام — في الطريق للعميل"
+  "pickedUpFromStore": "تم الاستلام — في الطريق للعميل",
+
+  "logOut": "تسجيل الخروج",
+  "logOutTitle": "تسجيل الخروج؟",
+  "logOutSub": "ستحتاج إلى تسجيل الدخول مرة أخرى للوصول إلى التطبيق.",
+  "profile": "الملف الشخصي",
+  "accountSection": "الحساب",
+  "notifications": "الإشعارات",
+  "changePassword": "تغيير كلمة المرور",
+  "helpCenter": "مركز المساعدة",
+  "contactUs": "تواصل معنا",
+  "rateTheApp": "قيّم التطبيق",
+  "termsOfService": "شروط الخدمة",
+  "privacyPolicy": "سياسة الخصوصية",
+  "legalSection": "القانوني",
+  "totalDeliveries": "إجمالي التوصيلات",
+  "onBarqSince": "في برق منذ",
+  "system": "تلقائي",
+  "light": "فاتح",
+  "dark": "داكن"
 }

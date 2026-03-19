@@ -13,8 +13,12 @@ class AuthNotifier extends ChangeNotifier {
   bool _verified = false;
 
   AuthNotifier({required this.requiredRole}) {
-    // Check any already-restored session on startup
+    // If a session is already present (e.g. hot-reload or app resume),
+    // verify role immediately. We set _verified optimistically until the
+    // check completes so the router doesn't flash /login.
     if (Supabase.instance.client.auth.currentSession != null) {
+      _verified = true; // optimistic: already had a session
+      notifyListeners();
       _verifyRole();
     }
     _sub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {

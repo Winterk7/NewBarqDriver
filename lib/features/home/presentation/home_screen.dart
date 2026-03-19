@@ -68,6 +68,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationService.router = GoRouter.of(context);
       NotificationService.initFCM().ignore();
+      // Request location permission immediately on entry.
+      LocationService.requestPermission().then((granted) {
+        if (granted && mounted) _startPositionStream();
+      });
     });
   }
 
@@ -233,19 +237,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   userAgentPackageName: 'com.barq.driver',
                   retinaMode: true,
                 ),
-                // Driver location marker
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _currentPosition ?? _defaultCenter,
-                      width: 56,
-                      height: 56,
-                      child: _DriverMarker(
-                        isOnline: _status != DriverStatus.offline,
+                // Driver location marker — only shown once real GPS is known
+                if (_currentPosition != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _currentPosition!,
+                        width: 56,
+                        height: 56,
+                        child: _DriverMarker(
+                          isOnline: _status != DriverStatus.offline,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
 
@@ -271,8 +276,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     onTap: () {
                       HapticFeedback.lightImpact();
                       final cur = ref.read(themeModeProvider);
-                      ref.read(themeModeProvider.notifier).state =
-                          cur == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+                      ref.read(themeModeProvider.notifier).setTheme(
+                          cur == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark);
                     },
                     dark: appIsDark,
                   ),

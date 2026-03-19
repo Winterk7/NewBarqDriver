@@ -245,4 +245,58 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pickedUpFromStore => 'تم الاستلام — في الطريق للعميل';
+
+  @override
+  String get logOut => 'تسجيل الخروج';
+
+  @override
+  String get logOutTitle => 'تسجيل الخروج؟';
+
+  @override
+  String get logOutSub => 'ستحتاج إلى تسجيل الدخول مرة أخرى للوصول إلى التطبيق.';
+
+  @override
+  String get profile => 'الملف الشخصي';
+
+  @override
+  String get accountSection => 'الحساب';
+
+  @override
+  String get notifications => 'الإشعارات';
+
+  @override
+  String get changePassword => 'تغيير كلمة المرور';
+
+  @override
+  String get helpCenter => 'مركز المساعدة';
+
+  @override
+  String get contactUs => 'تواصل معنا';
+
+  @override
+  String get rateTheApp => 'قيّم التطبيق';
+
+  @override
+  String get termsOfService => 'شروط الخدمة';
+
+  @override
+  String get privacyPolicy => 'سياسة الخصوصية';
+
+  @override
+  String get legalSection => 'القانوني';
+
+  @override
+  String get totalDeliveries => 'إجمالي التوصيلات';
+
+  @override
+  String get onBarqSince => 'في برق منذ';
+
+  @override
+  String get system => 'تلقائي';
+
+  @override
+  String get light => 'فاتح';
+
+  @override
+  String get dark => 'داكن';
 }
