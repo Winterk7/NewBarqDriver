@@ -16,7 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import 'package:url_launcher/url_launcher.dart';
 
 // ── Mapbox tile helper ─────────────────────────────────────────────────────────
@@ -43,6 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   static const _defaultCenter = LatLng(32.8872, 13.1913);
 
   final _mapCtrl = MapController();
+  bool _mapReady = false;
   DriverStatus _status = DriverStatus.offline;
   DriverOrder? _activeOrder;
   LatLng? _currentPosition;
@@ -92,8 +93,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     _positionSub?.cancel();
     _sheetCtrl.dispose();
-    _mapCtrl.dispose();
+    // MapController.dispose() is called after super.dispose() to avoid
+    // accessing it during Flutter's framework teardown.
     super.dispose();
+    _mapCtrl.dispose();
   }
 
   // ── Status toggle ─────────────────────────────────────────────────────────
@@ -227,6 +230,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               options: MapOptions(
                 initialCenter: _defaultCenter,
                 initialZoom: 14.5,
+                onMapReady: () {
+                  if (mounted) setState(() => _mapReady = true);
+                },
                 interactionOptions: const InteractionOptions(
                   flags: InteractiveFlag.all,
                 ),
@@ -236,6 +242,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   urlTemplate: _mapboxTile(tileStyle),
                   userAgentPackageName: 'com.barq.driver',
                   retinaMode: true,
+                  maxZoom: 19,
+                  keepBuffer: 3,
+                  panBuffer: 1,
+                  // Silently swallow tile-fetch errors — shows blank tiles
+                  // instead of crashing the app when network is unreliable.
+                  errorTileCallback: (tile, error, stackTrace) {
+                    // ignore: avoid_print
+                    debugPrint('[TileLayer] tile error (ignored): $error');
+                  },
+                  evictErrorTileStrategy:
+                      EvictErrorTileStrategy.dispose,
                 ),
                 // Driver location marker — only shown once real GPS is known
                 if (_currentPosition != null)
@@ -243,8 +260,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     markers: [
                       Marker(
                         point: _currentPosition!,
-                        width: 56,
-                        height: 56,
+                        width: 64,
+                        height: 72,
                         child: _DriverMarker(
                           isOnline: _status != DriverStatus.offline,
                         ),
@@ -300,7 +317,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 icon: Icons.my_location_rounded,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  _mapCtrl.move(_currentPosition ?? _defaultCenter, 15.0);
+                  if (_mapReady) {
+                    _mapCtrl.move(
+                        _currentPosition ?? _defaultCenter, 15.0);
+                  }
                 },
                 dark: appIsDark,
               ),
@@ -360,47 +380,293 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
 // ── Driver map marker ─────────────────────────────────────────────────────────
 
-class _DriverMarker extends StatelessWidget {
+class _DriverMarker extends StatefulWidget {
   final bool isOnline;
   const _DriverMarker({required this.isOnline});
 
   @override
+  State<_DriverMarker> createState() => _DriverMarkerState();
+}
+
+class _DriverMarkerState extends State<_DriverMarker>
+    with TickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+  late final AnimationController _floatCtrl;
+  late final Animation<double> _pulseScale;
+  late final Animation<double> _pulseOpacity;
+  late final Animation<double> _floatY;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+    _floatCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+
+    _pulseScale = Tween<double>(begin: 1.0, end: 2.4).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut),
+    );
+    _pulseOpacity = Tween<double>(begin: 0.55, end: 0.0).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut),
+    );
+    _floatY = Tween<double>(begin: -2.5, end: 2.5).animate(
+      CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    _floatCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? Colors.white : AppColors.backgroundDark;
-    final fg = isDark ? AppColors.backgroundDark : Colors.white;
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: bg.withValues(alpha: 0.15),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: bg,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 12,
-                spreadRadius: 2,
+    return AnimatedBuilder(
+      animation: Listenable.merge([_pulseCtrl, _floatCtrl]),
+      builder: (context, _) => SizedBox(
+        width: 64,
+        height: 72,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Pulsing glow ring (only when online)
+            if (widget.isOnline)
+              Transform.scale(
+                scale: _pulseScale.value,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primaryGreen
+                          .withValues(alpha: _pulseOpacity.value),
+                      width: 2,
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
-          child: Icon(
-            Icons.delivery_dining_rounded,
-            color: fg,
-            size: 26,
-          ),
+            // Drop shadow ellipse
+            Positioned(
+              bottom: 4,
+              child: Container(
+                width: 30,
+                height: 8,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.black.withValues(alpha: 0.25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.20),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Floating car (translated on Y axis)
+            Transform.translate(
+              offset: Offset(0, _floatY.value),
+              child: CustomPaint(
+                size: const Size(32, 52),
+                painter: _CarPainter(isOnline: widget.isOnline),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+/// Top-down car silhouette painter — sleek black map-marker style.
+class _CarPainter extends CustomPainter {
+  final bool isOnline;
+  const _CarPainter({required this.isOnline});
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final w = s.width;
+    final h = s.height;
+
+    // ── Shadow ─────────────────────────────────────────────────────────────
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.28)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.12, h * 0.70, w * 0.76, h * 0.22),
+          const Radius.circular(6)),
+      shadowPaint,
+    );
+
+    // ── Body ───────────────────────────────────────────────────────────────
+    final bodyPaint = Paint()
+      ..color = const Color(0xFF111111)
+      ..style = PaintingStyle.fill;
+    final bodyPath = Path()
+      ..moveTo(w * 0.10, h * 0.30)
+      ..lineTo(w * 0.10, h * 0.78)
+      ..quadraticBezierTo(w * 0.10, h * 0.89, w * 0.24, h * 0.91)
+      ..lineTo(w * 0.76, h * 0.91)
+      ..quadraticBezierTo(w * 0.90, h * 0.89, w * 0.90, h * 0.78)
+      ..lineTo(w * 0.90, h * 0.30)
+      ..quadraticBezierTo(w * 0.90, h * 0.22, w * 0.78, h * 0.20)
+      ..lineTo(w * 0.22, h * 0.20)
+      ..quadraticBezierTo(w * 0.10, h * 0.22, w * 0.10, h * 0.30)
+      ..close();
+    canvas.drawPath(bodyPath, bodyPaint);
+
+    // ── Roof / cabin ───────────────────────────────────────────────────────
+    final roofPaint = Paint()
+      ..color = const Color(0xFF1C1C1C)
+      ..style = PaintingStyle.fill;
+    final roofPath = Path()
+      ..moveTo(w * 0.25, h * 0.20)
+      ..lineTo(w * 0.30, h * 0.03)
+      ..quadraticBezierTo(w * 0.32, h * 0.01, w * 0.40, h * 0.01)
+      ..lineTo(w * 0.60, h * 0.01)
+      ..quadraticBezierTo(w * 0.68, h * 0.01, w * 0.70, h * 0.03)
+      ..lineTo(w * 0.75, h * 0.20)
+      ..close();
+    canvas.drawPath(roofPath, roofPaint);
+
+    // ── Windshield glass ──────────────────────────────────────────────────
+    final glassPaint = Paint()
+      ..color = const Color(0xFF3A5A7A).withValues(alpha: 0.85)
+      ..style = PaintingStyle.fill;
+    final windshieldPath = Path()
+      ..moveTo(w * 0.27, h * 0.19)
+      ..lineTo(w * 0.32, h * 0.04)
+      ..lineTo(w * 0.68, h * 0.04)
+      ..lineTo(w * 0.73, h * 0.19)
+      ..close();
+    canvas.drawPath(windshieldPath, glassPaint);
+
+    // Windshield glare
+    final glarePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.14)
+      ..style = PaintingStyle.fill;
+    final glarePath = Path()
+      ..moveTo(w * 0.30, h * 0.18)
+      ..lineTo(w * 0.33, h * 0.05)
+      ..lineTo(w * 0.48, h * 0.05)
+      ..lineTo(w * 0.44, h * 0.18)
+      ..close();
+    canvas.drawPath(glarePath, glarePaint);
+
+    // ── Side highlight (simulates 3-D curvature) ──────────────────────────
+    final highlightPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.07)
+      ..style = PaintingStyle.fill;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.38, h * 0.21, w * 0.22, h * 0.36),
+          const Radius.circular(4)),
+      highlightPaint,
+    );
+
+    // ── Headlights (front) ────────────────────────────────────────────────
+    final headPaint = Paint()
+      ..color = isOnline
+          ? const Color(0xFFFFE566)
+          : const Color(0xFF555555)
+      ..style = PaintingStyle.fill;
+    if (isOnline) {
+      headPaint.maskFilter =
+          const MaskFilter.blur(BlurStyle.normal, 3);
+    }
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.11, h * 0.21, w * 0.22, h * 0.07),
+          const Radius.circular(2)),
+      headPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.67, h * 0.21, w * 0.22, h * 0.07),
+          const Radius.circular(2)),
+      headPaint,
+    );
+
+    // ── Taillights (rear) ────────────────────────────────────────────────
+    final tailPaint = Paint()
+      ..color = isOnline
+          ? const Color(0xFFFF3333)
+          : const Color(0xFF444444)
+      ..style = PaintingStyle.fill;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.11, h * 0.80, w * 0.22, h * 0.07),
+          const Radius.circular(2)),
+      tailPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.67, h * 0.80, w * 0.22, h * 0.07),
+          const Radius.circular(2)),
+      tailPaint,
+    );
+
+    // ── Wheels ────────────────────────────────────────────────────────────
+    final wheelPaint = Paint()
+      ..color = const Color(0xFF080808)
+      ..style = PaintingStyle.fill;
+    // Front-left
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(-w * 0.04, h * 0.27, w * 0.16, h * 0.18),
+          const Radius.circular(3)),
+      wheelPaint,
+    );
+    // Front-right
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.88, h * 0.27, w * 0.16, h * 0.18),
+          const Radius.circular(3)),
+      wheelPaint,
+    );
+    // Rear-left
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(-w * 0.04, h * 0.62, w * 0.16, h * 0.18),
+          const Radius.circular(3)),
+      wheelPaint,
+    );
+    // Rear-right
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.88, h * 0.62, w * 0.16, h * 0.18),
+          const Radius.circular(3)),
+      wheelPaint,
+    );
+
+    // Wheel rims
+    final rimPaint = Paint()
+      ..color = const Color(0xFF555555)
+      ..style = PaintingStyle.fill;
+    for (final rect in [
+      Rect.fromLTWH(-w * 0.01, h * 0.30, w * 0.10, h * 0.12),
+      Rect.fromLTWH(w * 0.91, h * 0.30, w * 0.10, h * 0.12),
+      Rect.fromLTWH(-w * 0.01, h * 0.65, w * 0.10, h * 0.12),
+      Rect.fromLTWH(w * 0.91, h * 0.65, w * 0.10, h * 0.12),
+    ]) {
+      canvas.drawOval(rect, rimPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CarPainter old) => old.isOnline != isOnline;
+}
+
 
 // ── Top-bar widgets ───────────────────────────────────────────────────────────
 

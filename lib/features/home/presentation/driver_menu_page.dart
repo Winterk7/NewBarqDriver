@@ -5,6 +5,15 @@ import 'package:barq_driver/core/providers/locale_provider.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
 import 'package:barq_driver/features/home/domain/driver_status.dart';
 import 'package:barq_driver/features/home/presentation/analytics_screen.dart';
+import 'package:barq_driver/features/home/presentation/change_password_screen.dart';
+import 'package:barq_driver/features/home/presentation/contact_us_screen.dart';
+import 'package:barq_driver/features/home/presentation/delivery_history_screen.dart';
+import 'package:barq_driver/features/home/presentation/edit_profile_screen.dart';
+import 'package:barq_driver/features/home/presentation/help_center_screen.dart';
+import 'package:barq_driver/features/home/presentation/legal_screens.dart';
+import 'package:barq_driver/features/home/presentation/rating_screen.dart';
+import 'package:barq_driver/features/home/presentation/wallet_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:barq_driver/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -338,10 +347,17 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
                 // ── Driver ───────────────────────────────────────────────
                 sectionLabel(l.driverSection),
                 settingsCard([
-                  settingsRow(icon: Icons.bar_chart_rounded, label: l.analytics, isFirst: true, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverAnalyticsScreen()))),
-                  settingsRow(icon: Icons.history_rounded, label: l.deliveryHistory, onTap: () {}),
-                  settingsRow(icon: Icons.account_balance_wallet_rounded, label: l.walletEarnings, onTap: () {}),
-                  settingsRow(icon: Icons.star_rounded, label: l.myRating, value: '4.9', isLast: true, onTap: () {}),
+                  settingsRow(icon: Icons.bar_chart_rounded,           label: l.analytics,       isFirst: true,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverAnalyticsScreen()))),
+                  settingsRow(icon: Icons.history_rounded,              label: l.deliveryHistory,               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeliveryHistoryScreen()))),
+                  settingsRow(icon: Icons.account_balance_wallet_rounded, label: l.walletEarnings,              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletScreen()))),
+                  settingsRow(icon: Icons.star_rounded,                 label: l.myRating,                      isLast: true, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RatingScreen()))),
+                ]),
+
+                // ── Edit profile ─────────────────────────────────────────
+                sectionLabel(l.accountSection),
+                settingsCard([
+                  settingsRow(icon: Icons.person_rounded,              label: l.editProfile,     isFirst: true,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()))),
+                  settingsRow(icon: Icons.lock_rounded,                 label: l.changePassword,  isLast: true,   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordScreen()))),
                 ]),
 
                 // ── Preferences ──────────────────────────────────────────
@@ -370,16 +386,20 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
                 // ── Support ──────────────────────────────────────────────
                 sectionLabel(l.supportSection),
                 settingsCard([
-                  settingsRow(icon: Icons.help_rounded, label: l.helpCenter, isFirst: true, onTap: () {}),
-                  settingsRow(icon: Icons.chat_bubble_rounded, label: l.contactUs, onTap: () {}),
-                  settingsRow(icon: Icons.star_outline_rounded, label: l.rateTheApp, isLast: true, onTap: () {}),
+                  settingsRow(icon: Icons.help_rounded,         label: l.helpCenter,  isFirst: true, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpCenterScreen()))),
+                  settingsRow(icon: Icons.chat_bubble_rounded,  label: l.contactUs,                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactUsScreen()))),
+                  settingsRow(icon: Icons.star_outline_rounded, label: l.rateTheApp,  isLast: true,  onTap: () async {
+                    const appStoreUrl = 'https://apps.apple.com/app/id0000000000'; // replace with real ID
+                    final uri = Uri.parse(appStoreUrl);
+                    if (await canLaunchUrl(uri)) launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }),
                 ]),
 
                 // ── Legal ────────────────────────────────────────────────
                 sectionLabel(l.legalSection),
                 settingsCard([
-                  settingsRow(icon: Icons.description_rounded, label: l.termsOfService, isFirst: true, onTap: () {}),
-                  settingsRow(icon: Icons.privacy_tip_rounded, label: l.privacyPolicy, isLast: true, onTap: () {}),
+                  settingsRow(icon: Icons.description_rounded, label: l.termsOfService, isFirst: true, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsScreen()))),
+                  settingsRow(icon: Icons.privacy_tip_rounded, label: l.privacyPolicy,  isLast: true,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyScreen()))),
                 ]),
 
                 const SizedBox(height: AppDimens.xl),

@@ -299,4 +299,130 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dark => 'داكن';
+
+  @override
+  String get editProfile => 'تعديل الملف الشخصي';
+
+  @override
+  String get fullName => 'الاسم الكامل';
+
+  @override
+  String get phoneNumber => 'رقم الهاتف';
+
+  @override
+  String get saveChanges => 'حفظ التغييرات';
+
+  @override
+  String get profileUpdated => 'تم تحديث الملف بنجاح';
+
+  @override
+  String get currentPassword => 'كلمة المرور الحالية';
+
+  @override
+  String get newPassword => 'كلمة المرور الجديدة';
+
+  @override
+  String get confirmPassword => 'تأكيد كلمة المرور';
+
+  @override
+  String get updatePassword => 'تحديث كلمة المرور';
+
+  @override
+  String get passwordChanged => 'تم تغيير كلمة المرور بنجاح';
+
+  @override
+  String get passwordsDontMatch => 'كلمتا المرور غير متطابقتين';
+
+  @override
+  String get noDeliveriesYet => 'لا توصيلات حتى الآن';
+
+  @override
+  String get noDeliveriesSub => 'ستظهر الطلبات المكتملة هنا';
+
+  @override
+  String get orderId => 'طلب';
+
+  @override
+  String get deliveredAt => 'تم التسليم';
+
+  @override
+  String get totalEarned => 'إجمالي الأرباح';
+
+  @override
+  String get pendingBalance => 'الرصيد المعلق';
+
+  @override
+  String get thisMonth => 'هذا الشهر';
+
+  @override
+  String get noEarningsYet => 'لا أرباح بعد';
+
+  @override
+  String get noEarningsSub => 'ابدأ التوصيل لرؤية أرباحك هنا';
+
+  @override
+  String get yourRating => 'تقييمك';
+
+  @override
+  String get noRatingYet => 'لا تقييمات بعد';
+
+  @override
+  String get noRatingSub => 'سيظهر تقييمك بعد أول توصيلة';
+
+  @override
+  String get ratingSubtitle => 'بناءً على آراء العملاء';
+
+  @override
+  String get howCanWeHelp => 'كيف يمكننا مساعدتك؟';
+
+  @override
+  String get faqTitle => 'الأسئلة الشائعة';
+
+  @override
+  String get faqQ1 => 'كيف أبدأ في استقبال الطلبات؟';
+
+  @override
+  String get faqA1 => 'اضغط على زر اتصل في الشاشة الرئيسية. بمجرد الاتصال ستُسند إليك الطلبات تلقائياً.';
+
+  @override
+  String get faqQ2 => 'كيف تُحسب أرباحي؟';
+
+  @override
+  String get faqA2 => 'تحصل على رسوم توصيل لكل طلب. تظهر الرسوم على بطاقة الطلب.';
+
+  @override
+  String get faqQ3 => 'ماذا أفعل إذا واجهت مشكلة في طلب؟';
+
+  @override
+  String get faqA3 => 'تواصل مع الدعم عبر واتساب أو الهاتف وقدم رقم الطلب. يستجيب فريقنا في دقائق.';
+
+  @override
+  String get faqQ4 => 'متى أحصل على مستحقاتي؟';
+
+  @override
+  String get faqA4 => 'تتم المعالجة كل أحد. تصبح الأرصدة متاحة خلال 1-2 يوم عمل.';
+
+  @override
+  String get contactSupportTitle => 'تواصل مع الدعم';
+
+  @override
+  String get contactSupportSub => 'فريقنا متاح من 9 صباحاً حتى 11 مساءً، 7 أيام في الأسبوع';
+
+  @override
+  String get whatsApp => 'واتساب';
+
+  @override
+  String get callSupport => 'اتصل بالدعم';
+
+  @override
+  String get emailSupport => 'راسلنا بالبريد';
+
+  @override
+  String get termsBody => 'تحكم هذه الشروط استخدامك لتطبيق برق درايفر. باستخدام التطبيق توافق على هذه الشروط.\n\nبرق درايفر منصة توصيل تربط السائقين بالتجار الشركاء. توافق على اتباع القوانين المعمول بها والحفاظ على رخصة قيادة سارية وعدم إساءة استخدام المنصة.\n\nتحتفظ برق بالحق في تعليق الحسابات التي تنتهك الشروط. للاستفسار: support@barq.ly';
+
+  @override
+  String get privacyBody => 'نجمع بيانات الموقع لتتبع التوصيل، وبيانات الملف الشخصي للتعريف بك على المنصة. البيانات مؤمنة ولا تُباع لأطراف ثالثة.\n\nيمكنك طلب حذف حسابك وجميع بياناتك في أي وقت من صفحة الملف الشخصي. للاستفسار: privacy@barq.ly';
+
+  @override
+  String get lastUpdated => 'آخر تحديث مارس 2026';
 }

@@ -299,4 +299,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dark => 'Dark';
+
+  @override
+  String get editProfile => 'Edit Profile';
+
+  @override
+  String get fullName => 'Full Name';
+
+  @override
+  String get phoneNumber => 'Phone Number';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get profileUpdated => 'Profile updated successfully';
+
+  @override
+  String get currentPassword => 'Current Password';
+
+  @override
+  String get newPassword => 'New Password';
+
+  @override
+  String get confirmPassword => 'Confirm Password';
+
+  @override
+  String get updatePassword => 'Update Password';
+
+  @override
+  String get passwordChanged => 'Password changed successfully';
+
+  @override
+  String get passwordsDontMatch => 'Passwords don\'t match';
+
+  @override
+  String get noDeliveriesYet => 'No deliveries yet';
+
+  @override
+  String get noDeliveriesSub => 'Completed orders will appear here';
+
+  @override
+  String get orderId => 'Order';
+
+  @override
+  String get deliveredAt => 'Delivered';
+
+  @override
+  String get totalEarned => 'Total Earned';
+
+  @override
+  String get pendingBalance => 'Pending Balance';
+
+  @override
+  String get thisMonth => 'This Month';
+
+  @override
+  String get noEarningsYet => 'No earnings yet';
+
+  @override
+  String get noEarningsSub => 'Start delivering to see your earnings here';
+
+  @override
+  String get yourRating => 'Your Rating';
+
+  @override
+  String get noRatingYet => 'No ratings yet';
+
+  @override
+  String get noRatingSub => 'Your rating will appear after your first delivery';
+
+  @override
+  String get ratingSubtitle => 'Based on customer reviews';
+
+  @override
+  String get howCanWeHelp => 'How can we help?';
+
+  @override
+  String get faqTitle => 'Frequently Asked Questions';
+
+  @override
+  String get faqQ1 => 'How do I go online and start receiving orders?';
+
+  @override
+  String get faqA1 => 'Tap the \'Go Online\' button on the home screen. Once online, orders will be assigned to you automatically.';
+
+  @override
+  String get faqQ2 => 'How are my earnings calculated?';
+
+  @override
+  String get faqA2 => 'You earn a delivery fee per order. Fees are shown on each order card.';
+
+  @override
+  String get faqQ3 => 'What should I do if I have an issue with an order?';
+
+  @override
+  String get faqA3 => 'Contact support via WhatsApp or phone and provide your Order ID. Our team responds within minutes.';
+
+  @override
+  String get faqQ4 => 'When will I receive my payout?';
+
+  @override
+  String get faqA4 => 'Payouts are processed every Sunday. Balances become available within 1-2 business days.';
+
+  @override
+  String get contactSupportTitle => 'Contact Support';
+
+  @override
+  String get contactSupportSub => 'Our team is available 9am - 11pm, 7 days a week';
+
+  @override
+  String get whatsApp => 'WhatsApp';
+
+  @override
+  String get callSupport => 'Call Support';
+
+  @override
+  String get emailSupport => 'Email Support';
+
+  @override
+  String get termsBody => 'These Terms of Service govern your use of the Barq Driver application. By using the app you agree to these terms.\n\nBarq Driver is a delivery platform connecting drivers with partner merchants. You agree to follow all applicable laws, maintain a valid driver licence, and not misuse the platform.\n\nBarq reserves the right to suspend accounts that violate these terms. Contact support@barq.ly for questions.';
+
+  @override
+  String get privacyBody => 'We collect location data to enable real-time delivery tracking, and profile data (name, phone) to identify you on the platform. Data is stored securely and is never sold to third parties.\n\nYou can request deletion of your account and all associated data at any time from the Profile page. Contact privacy@barq.ly for questions.';
+
+  @override
+  String get lastUpdated => 'Last updated March 2026';
 }

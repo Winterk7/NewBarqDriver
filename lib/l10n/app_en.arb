@@ -106,5 +106,54 @@
   "onBarqSince": "On Barq Since",
   "system": "System",
   "light": "Light",
-  "dark": "Dark"
+  "dark": "Dark",
+
+  "editProfile": "Edit Profile",
+  "fullName": "Full Name",
+  "phoneNumber": "Phone Number",
+  "saveChanges": "Save Changes",
+  "profileUpdated": "Profile updated successfully",
+
+  "currentPassword": "Current Password",
+  "newPassword": "New Password",
+  "confirmPassword": "Confirm Password",
+  "updatePassword": "Update Password",
+  "passwordChanged": "Password changed successfully",
+  "passwordsDontMatch": "Passwords don't match",
+
+  "noDeliveriesYet": "No deliveries yet",
+  "noDeliveriesSub": "Completed orders will appear here",
+  "orderId": "Order",
+  "deliveredAt": "Delivered",
+
+  "totalEarned": "Total Earned",
+  "pendingBalance": "Pending Balance",
+  "thisMonth": "This Month",
+  "noEarningsYet": "No earnings yet",
+  "noEarningsSub": "Start delivering to see your earnings here",
+
+  "yourRating": "Your Rating",
+  "noRatingYet": "No ratings yet",
+  "noRatingSub": "Your rating will appear after your first delivery",
+  "ratingSubtitle": "Based on customer reviews",
+
+  "howCanWeHelp": "How can we help?",
+  "faqTitle": "Frequently Asked Questions",
+  "faqQ1": "How do I go online and start receiving orders?",
+  "faqA1": "Tap the 'Go Online' button on the home screen. Once online, orders will be assigned to you automatically.",
+  "faqQ2": "How are my earnings calculated?",
+  "faqA2": "You earn a delivery fee per order. Fees are shown on each order card.",
+  "faqQ3": "What should I do if I have an issue with an order?",
+  "faqA3": "Contact support via WhatsApp or phone and provide your Order ID. Our team responds within minutes.",
+  "faqQ4": "When will I receive my payout?",
+  "faqA4": "Payouts are processed every Sunday. Balances become available within 1-2 business days.",
+  "contactSupportTitle": "Contact Support",
+  "contactSupportSub": "Our team is available 9am - 11pm, 7 days a week",
+  "whatsApp": "WhatsApp",
+  "callSupport": "Call Support",
+  "emailSupport": "Email Support",
+
+  "termsBody": "These Terms of Service govern your use of the Barq Driver application. By using the app you agree to these terms.\n\nBarq Driver is a delivery platform connecting drivers with partner merchants. You agree to follow all applicable laws, maintain a valid driver licence, and not misuse the platform.\n\nBarq reserves the right to suspend accounts that violate these terms. Contact support@barq.ly for questions.",
+  "privacyBody": "We collect location data to enable real-time delivery tracking, and profile data (name, phone) to identify you on the platform. Data is stored securely and is never sold to third parties.\n\nYou can request deletion of your account and all associated data at any time from the Profile page. Contact privacy@barq.ly for questions.",
+  "lastUpdated": "Last updated March 2026"
 }
