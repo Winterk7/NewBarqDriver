@@ -49,5 +49,12 @@
 	<string>Barq Driver uses your location to track deliveries in real time.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Barq Driver uses your location to track deliveries in real time.</string>
+
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>maps</string>
+		<string>https</string>
+	</array>
 </dict>
 </plist>

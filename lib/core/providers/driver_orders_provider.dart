@@ -31,7 +31,7 @@ final driverActiveOrderProvider = StreamProvider<DriverOrder?>((ref) {
       .asyncMap((_) async {
         final List<Map<String, dynamic>> rows = await sb
             .from('orders')
-            .select('*, stores(name, address)')
+            .select('*, stores(name, address), profiles!customer_id(phone), order_items(product_name, quantity, unit_price)')
             .eq('driver_id', userId)
             .inFilter('status', ['accepted', 'preparing', 'ready', 'picked_up'])
             .order('created_at', ascending: false)

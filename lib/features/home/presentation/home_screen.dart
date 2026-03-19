@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
 import 'package:barq_driver/core/services/location_service.dart';
@@ -12,8 +14,10 @@ import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ── Mapbox tile helper ─────────────────────────────────────────────────────────
 const _kMapboxToken =
@@ -35,12 +39,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
-  // Default centre: Riyadh, SA
-  static const _defaultCenter = LatLng(24.7136, 46.6753);
+  // Default centre: Tripoli, Libya
+  static const _defaultCenter = LatLng(32.8872, 13.1913);
 
   final _mapCtrl = MapController();
   DriverStatus _status = DriverStatus.offline;
   DriverOrder? _activeOrder;
+  LatLng? _currentPosition;
+  StreamSubscription<Position>? _positionSub;
 
   // Bottom sheet animation
   late final AnimationController _sheetCtrl;
@@ -65,8 +71,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
+  void _startPositionStream() {
+    _positionSub?.cancel();
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((pos) {
+      if (!mounted) return;
+      setState(() => _currentPosition = LatLng(pos.latitude, pos.longitude));
+    });
+  }
+
   @override
   void dispose() {
+    _positionSub?.cancel();
     _sheetCtrl.dispose();
     _mapCtrl.dispose();
     super.dispose();
@@ -85,11 +105,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
     // Persist availability to Supabase so partner can filter online drivers.
     setDriverAvailability(_status != DriverStatus.offline);
-    // Start/stop GPS publishing.
+    // Start/stop GPS publishing + live map marker.
     if (_status != DriverStatus.offline) {
       LocationService.start();
+      _startPositionStream();
     } else {
       LocationService.stop();
+      _positionSub?.cancel();
+      _positionSub = null;
     }
     _sheetCtrl
       ..reset()
@@ -214,7 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 MarkerLayer(
                   markers: [
                     Marker(
-                      point: _defaultCenter,
+                      point: _currentPosition ?? _defaultCenter,
                       width: 56,
                       height: 56,
                       child: _DriverMarker(
@@ -271,8 +294,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: _MapIconButton(
                 icon: Icons.my_location_rounded,
                 onTap: () {
-                  _mapCtrl.move(_defaultCenter, 15.0);
                   HapticFeedback.lightImpact();
+                  _mapCtrl.move(_currentPosition ?? _defaultCenter, 15.0);
                 },
                 dark: appIsDark,
               ),
@@ -303,7 +326,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       case DriverStatus.online:
         return 190 + bottomPad;
       case DriverStatus.onDelivery:
-        return 280 + bottomPad;
+        return 380 + bottomPad; // extra room for items list + phone
     }
   }
 
@@ -789,7 +812,7 @@ class _BouncingDotsState extends State<_BouncingDots>
   }
 }
 
-class _DeliverySheet extends StatelessWidget {
+class _DeliverySheet extends StatefulWidget {
   final DriverOrder order;
   final double bottomPad;
   final VoidCallback onPickedUp;
@@ -802,15 +825,94 @@ class _DeliverySheet extends StatelessWidget {
   });
 
   @override
+  State<_DeliverySheet> createState() => _DeliverySheetState();
+}
+
+class _DeliverySheetState extends State<_DeliverySheet> {
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  Future<void> _launchPhone(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  Future<void> _launchMaps(String address) async {
+    final encoded = Uri.encodeComponent(address);
+    // Try Apple Maps first, fall back to Google Maps web
+    final appleUri = Uri.parse('maps:?q=$encoded');
+    final googleUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+    if (await canLaunchUrl(appleUri)) {
+      await launchUrl(appleUri);
+    } else {
+      await launchUrl(googleUri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _confirmPickup() async {
+    final l = AppLocalizations.of(context)!;
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.pickedUpFromStore, style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w700)),
+        content: Text(
+          'Confirm you have picked up the order from ${widget.order.storeName}?',
+          style: TextStyle(fontFamily: fontFamily),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.cancel, style: TextStyle(fontFamily: fontFamily)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen, foregroundColor: Colors.white),
+            child: Text(l.pickedUpFromStore, style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) widget.onPickedUp();
+  }
+
+  Future<void> _confirmDeliver() async {
+    final l = AppLocalizations.of(context)!;
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.markAsDelivered, style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w700)),
+        content: Text(
+          'Confirm delivery to ${widget.order.customerName}?',
+          style: TextStyle(fontFamily: fontFamily),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.cancel, style: TextStyle(fontFamily: fontFamily)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen, foregroundColor: Colors.white),
+            child: Text(l.markAsDelivered, style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) widget.onComplete();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final order = widget.order;
     final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppDimens.xl,
         AppDimens.lg,
         AppDimens.xl,
-        bottomPad + AppDimens.lg,
+        widget.bottomPad + AppDimens.lg,
       ),
       decoration: BoxDecoration(
         color: cs.surface,
@@ -842,16 +944,17 @@ class _DeliverySheet extends StatelessWidget {
           ),
           const SizedBox(height: AppDimens.md),
 
-          // Order ID + earnings row
+          // Short order ID + earnings row
           Row(
             children: [
               Text(
-                order.id,
+                order.shortId,
                 style: TextStyle(
                   fontFamily: fontFamily,
-                  fontSize: 13,
+                  fontSize: 14,
                   color: cs.onSurface.withValues(alpha: 0.55),
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
                 ),
               ),
               const Spacer(),
@@ -878,35 +981,104 @@ class _DeliverySheet extends StatelessWidget {
           ),
           const SizedBox(height: AppDimens.md),
 
-          // Route
+          // Route (dropoff address is tappable)
           _RouteRow(
             pickupLabel: order.storeName,
             pickupAddress: order.pickupAddress,
             dropoffAddress: order.dropoffAddress,
             customerName: order.customerName,
+            onDropoffTap: order.dropoffAddress.isNotEmpty
+                ? () => _launchMaps(order.dropoffAddress)
+                : null,
           ),
 
-          const SizedBox(height: AppDimens.md),
-
-          // Stats row
-          if (order.earnings > 0)
-            Row(
-              children: [
-                _StatChip(
-                  icon: Icons.bolt_rounded,
-                  label: 'LYD ${order.earnings.toStringAsFixed(2)}',
+          // Customer phone row
+          if (order.customerPhone.isNotEmpty) ...[
+            const SizedBox(height: AppDimens.sm),
+            InkWell(
+              onTap: () => _launchPhone(order.customerPhone),
+              borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.phone_rounded, size: 15, color: AppColors.primaryGreen),
+                    const SizedBox(width: 6),
+                    Text(
+                      order.customerPhone,
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 13,
+                        color: AppColors.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.primaryGreen,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
+          ],
+
+          // Order items list
+          if (order.items.isNotEmpty) ...[
+            const SizedBox(height: AppDimens.sm),
+            Container(
+              padding: const EdgeInsets.all(AppDimens.sm),
+              decoration: BoxDecoration(
+                color: cs.onSurface.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: order.items.map((item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${item.quantity}×',
+                        style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 12,
+                            color: cs.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'LYD ${item.unitPrice.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 12,
+                          color: cs.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+              ),
+            ),
+          ],
 
           const SizedBox(height: AppDimens.lg),
 
-          // Action button — changes based on current delivery stage
+          // Action button — confirmation dialog before proceeding
           SizedBox(
             width: double.infinity,
             height: AppDimens.buttonHeight,
             child: ElevatedButton(
-              onPressed: order.isPickedUp ? onComplete : onPickedUp,
+              onPressed: order.isPickedUp ? _confirmDeliver : _confirmPickup,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
                 foregroundColor: Colors.white,
@@ -916,9 +1088,7 @@ class _DeliverySheet extends StatelessWidget {
                 ),
               ),
               child: Text(
-                order.isPickedUp
-                    ? AppLocalizations.of(context)!.markAsDelivered
-                    : AppLocalizations.of(context)!.pickedUpFromStore,
+                order.isPickedUp ? l.markAsDelivered : l.pickedUpFromStore,
                 style: TextStyle(
                   fontFamily: fontFamily,
                   fontSize: 16,
@@ -944,11 +1114,13 @@ class _RouteRow extends StatelessWidget {
   final String pickupAddress;
   final String dropoffAddress;
   final String customerName;
+  final VoidCallback? onDropoffTap;
   const _RouteRow({
     required this.pickupLabel,
     required this.pickupAddress,
     required this.dropoffAddress,
     required this.customerName,
+    this.onDropoffTap,
   });
 
   @override
@@ -1012,12 +1184,20 @@ class _RouteRow extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              Text(
-                dropoffAddress,
-                style: TextStyle(
-                  fontFamily: fontFamily,
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+              // Tappable dropoff address
+              GestureDetector(
+                onTap: onDropoffTap,
+                child: Text(
+                  dropoffAddress,
+                  style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 12,
+                    color: onDropoffTap != null
+                        ? AppColors.primaryGreen
+                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                    decoration: onDropoffTap != null ? TextDecoration.underline : null,
+                    decorationColor: AppColors.primaryGreen,
+                  ),
                 ),
               ),
             ],
@@ -1028,39 +1208,3 @@ class _RouteRow extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _StatChip({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.md,
-        vertical: AppDimens.xs,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppDimens.radiusSm),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55)),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
