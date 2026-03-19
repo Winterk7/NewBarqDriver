@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
@@ -260,8 +261,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     markers: [
                       Marker(
                         point: _currentPosition!,
-                        width: 64,
-                        height: 72,
+                        width: 80,
+                        height: 90,
                         child: _DriverMarker(
                           isOnline: _status != DriverStatus.offline,
                         ),
@@ -431,8 +432,8 @@ class _DriverMarkerState extends State<_DriverMarker>
     return AnimatedBuilder(
       animation: Listenable.merge([_pulseCtrl, _floatCtrl]),
       builder: (context, _) => SizedBox(
-        width: 64,
-        height: 72,
+        width: 80,
+        height: 90,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -441,8 +442,8 @@ class _DriverMarkerState extends State<_DriverMarker>
               Transform.scale(
                 scale: _pulseScale.value,
                 child: Container(
-                  width: 34,
-                  height: 34,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -457,8 +458,8 @@ class _DriverMarkerState extends State<_DriverMarker>
             Positioned(
               bottom: 4,
               child: Container(
-                width: 30,
-                height: 8,
+                width: 38,
+                height: 10,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: Colors.black.withValues(alpha: 0.25),
@@ -476,7 +477,7 @@ class _DriverMarkerState extends State<_DriverMarker>
             Transform.translate(
               offset: Offset(0, _floatY.value),
               child: CustomPaint(
-                size: const Size(32, 52),
+                size: const Size(44, 66),
                 painter: _CarPainter(isOnline: widget.isOnline),
               ),
             ),
@@ -487,7 +488,7 @@ class _DriverMarkerState extends State<_DriverMarker>
   }
 }
 
-/// Top-down car silhouette painter — sleek black map-marker style.
+/// Google-Maps-style 3-D perspective car marker.
 class _CarPainter extends CustomPainter {
   final bool isOnline;
   const _CarPainter({required this.isOnline});
@@ -497,170 +498,262 @@ class _CarPainter extends CustomPainter {
     final w = s.width;
     final h = s.height;
 
-    // ── Shadow ─────────────────────────────────────────────────────────────
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.28)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.12, h * 0.70, w * 0.76, h * 0.22),
-          const Radius.circular(6)),
-      shadowPaint,
+    // ── Perspective ground shadow (offset bottom-right = light from top-left) ───
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(w * 0.57, h * 0.93), width: w * 0.88, height: h * 0.12),
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9),
     );
 
-    // ── Body ───────────────────────────────────────────────────────────────
-    final bodyPaint = Paint()
-      ..color = const Color(0xFF111111)
-      ..style = PaintingStyle.fill;
-    final bodyPath = Path()
-      ..moveTo(w * 0.10, h * 0.30)
-      ..lineTo(w * 0.10, h * 0.78)
-      ..quadraticBezierTo(w * 0.10, h * 0.89, w * 0.24, h * 0.91)
-      ..lineTo(w * 0.76, h * 0.91)
-      ..quadraticBezierTo(w * 0.90, h * 0.89, w * 0.90, h * 0.78)
-      ..lineTo(w * 0.90, h * 0.30)
-      ..quadraticBezierTo(w * 0.90, h * 0.22, w * 0.78, h * 0.20)
-      ..lineTo(w * 0.22, h * 0.20)
-      ..quadraticBezierTo(w * 0.10, h * 0.22, w * 0.10, h * 0.30)
-      ..close();
-    canvas.drawPath(bodyPath, bodyPaint);
-
-    // ── Roof / cabin ───────────────────────────────────────────────────────
-    final roofPaint = Paint()
-      ..color = const Color(0xFF1C1C1C)
-      ..style = PaintingStyle.fill;
-    final roofPath = Path()
-      ..moveTo(w * 0.25, h * 0.20)
-      ..lineTo(w * 0.30, h * 0.03)
-      ..quadraticBezierTo(w * 0.32, h * 0.01, w * 0.40, h * 0.01)
-      ..lineTo(w * 0.60, h * 0.01)
-      ..quadraticBezierTo(w * 0.68, h * 0.01, w * 0.70, h * 0.03)
-      ..lineTo(w * 0.75, h * 0.20)
-      ..close();
-    canvas.drawPath(roofPath, roofPaint);
-
-    // ── Windshield glass ──────────────────────────────────────────────────
-    final glassPaint = Paint()
-      ..color = const Color(0xFF3A5A7A).withValues(alpha: 0.85)
-      ..style = PaintingStyle.fill;
-    final windshieldPath = Path()
-      ..moveTo(w * 0.27, h * 0.19)
-      ..lineTo(w * 0.32, h * 0.04)
-      ..lineTo(w * 0.68, h * 0.04)
-      ..lineTo(w * 0.73, h * 0.19)
-      ..close();
-    canvas.drawPath(windshieldPath, glassPaint);
-
-    // Windshield glare
-    final glarePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.14)
-      ..style = PaintingStyle.fill;
-    final glarePath = Path()
-      ..moveTo(w * 0.30, h * 0.18)
-      ..lineTo(w * 0.33, h * 0.05)
-      ..lineTo(w * 0.48, h * 0.05)
-      ..lineTo(w * 0.44, h * 0.18)
-      ..close();
-    canvas.drawPath(glarePath, glarePaint);
-
-    // ── Side highlight (simulates 3-D curvature) ──────────────────────────
-    final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07)
-      ..style = PaintingStyle.fill;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.38, h * 0.21, w * 0.22, h * 0.36),
-          const Radius.circular(4)),
-      highlightPaint,
-    );
-
-    // ── Headlights (front) ────────────────────────────────────────────────
-    final headPaint = Paint()
-      ..color = isOnline
-          ? const Color(0xFFFFE566)
-          : const Color(0xFF555555)
-      ..style = PaintingStyle.fill;
+    // ── Online underglow (green neon underneath) ─────────────────────────
     if (isOnline) {
-      headPaint.maskFilter =
-          const MaskFilter.blur(BlurStyle.normal, 3);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(w * 0.50, h * 0.54), width: w * 0.80, height: h * 0.48),
+        Paint()
+          ..color = const Color(0xFF00C853).withValues(alpha: 0.40)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
+      );
     }
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.11, h * 0.21, w * 0.22, h * 0.07),
-          const Radius.circular(2)),
-      headPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.67, h * 0.21, w * 0.22, h * 0.07),
-          const Radius.circular(2)),
-      headPaint,
+
+    // ── Car body ─────────────────────────────────────────────────────────
+    final bodyPath = Path()
+      ..moveTo(w * 0.20, h * 0.10)
+      ..lineTo(w * 0.80, h * 0.10)
+      ..quadraticBezierTo(w * 0.93, h * 0.11, w * 0.93, h * 0.24)
+      ..lineTo(w * 0.93, h * 0.79)
+      ..quadraticBezierTo(w * 0.93, h * 0.92, w * 0.78, h * 0.93)
+      ..lineTo(w * 0.22, h * 0.93)
+      ..quadraticBezierTo(w * 0.07, h * 0.92, w * 0.07, h * 0.79)
+      ..lineTo(w * 0.07, h * 0.24)
+      ..quadraticBezierTo(w * 0.07, h * 0.11, w * 0.20, h * 0.10)
+      ..close();
+    canvas.drawPath(
+      bodyPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: const [Color(0xFF2C2C2C), Color(0xFF111111), Color(0xFF080808)],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
     );
 
-    // ── Taillights (rear) ────────────────────────────────────────────────
-    final tailPaint = Paint()
-      ..color = isOnline
-          ? const Color(0xFFFF3333)
-          : const Color(0xFF444444)
-      ..style = PaintingStyle.fill;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.11, h * 0.80, w * 0.22, h * 0.07),
-          const Radius.circular(2)),
-      tailPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.67, h * 0.80, w * 0.22, h * 0.07),
-          const Radius.circular(2)),
-      tailPaint,
+    // ── Left depth panel (darker = shadow side) ──────────────────────────
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.07, h * 0.24)
+        ..lineTo(w * 0.07, h * 0.79)
+        ..quadraticBezierTo(w * 0.07, h * 0.92, w * 0.22, h * 0.93)
+        ..lineTo(w * 0.27, h * 0.93)
+        ..lineTo(w * 0.27, h * 0.79)
+        ..lineTo(w * 0.15, h * 0.77)
+        ..lineTo(w * 0.15, h * 0.26)
+        ..lineTo(w * 0.27, h * 0.18)
+        ..lineTo(w * 0.22, h * 0.10)
+        ..quadraticBezierTo(w * 0.07, h * 0.11, w * 0.07, h * 0.24)
+        ..close(),
+      Paint()..color = const Color(0xFF050505),
     );
 
-    // ── Wheels ────────────────────────────────────────────────────────────
-    final wheelPaint = Paint()
-      ..color = const Color(0xFF080808)
-      ..style = PaintingStyle.fill;
-    // Front-left
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(-w * 0.04, h * 0.27, w * 0.16, h * 0.18),
-          const Radius.circular(3)),
-      wheelPaint,
-    );
-    // Front-right
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.88, h * 0.27, w * 0.16, h * 0.18),
-          const Radius.circular(3)),
-      wheelPaint,
-    );
-    // Rear-left
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(-w * 0.04, h * 0.62, w * 0.16, h * 0.18),
-          const Radius.circular(3)),
-      wheelPaint,
-    );
-    // Rear-right
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Rect.fromLTWH(w * 0.88, h * 0.62, w * 0.16, h * 0.18),
-          const Radius.circular(3)),
-      wheelPaint,
+    // ── Right depth panel (slightly lighter = light side) ────────────────
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.93, h * 0.24)
+        ..lineTo(w * 0.93, h * 0.79)
+        ..quadraticBezierTo(w * 0.93, h * 0.92, w * 0.78, h * 0.93)
+        ..lineTo(w * 0.73, h * 0.93)
+        ..lineTo(w * 0.73, h * 0.79)
+        ..lineTo(w * 0.85, h * 0.77)
+        ..lineTo(w * 0.85, h * 0.26)
+        ..lineTo(w * 0.73, h * 0.18)
+        ..lineTo(w * 0.78, h * 0.10)
+        ..quadraticBezierTo(w * 0.93, h * 0.11, w * 0.93, h * 0.24)
+        ..close(),
+      Paint()..color = const Color(0xFF1C1C1C),
     );
 
-    // Wheel rims
-    final rimPaint = Paint()
-      ..color = const Color(0xFF555555)
-      ..style = PaintingStyle.fill;
-    for (final rect in [
-      Rect.fromLTWH(-w * 0.01, h * 0.30, w * 0.10, h * 0.12),
-      Rect.fromLTWH(w * 0.91, h * 0.30, w * 0.10, h * 0.12),
-      Rect.fromLTWH(-w * 0.01, h * 0.65, w * 0.10, h * 0.12),
-      Rect.fromLTWH(w * 0.91, h * 0.65, w * 0.10, h * 0.12),
+    // ── Wheel arches ─────────────────────────────────────────────────────
+    for (final c in [
+      Offset(w * 0.16, h * 0.27), Offset(w * 0.84, h * 0.27),
+      Offset(w * 0.16, h * 0.76), Offset(w * 0.84, h * 0.76),
     ]) {
-      canvas.drawOval(rect, rimPaint);
+      canvas.drawOval(
+        Rect.fromCenter(center: c, width: w * 0.22, height: h * 0.145),
+        Paint()..color = const Color(0xFF040404),
+      );
     }
+
+    // ── Wheels + rims + spokes ────────────────────────────────────────────
+    final wheelCenters = [
+      Offset(w * 0.16, h * 0.27), Offset(w * 0.84, h * 0.27),
+      Offset(w * 0.16, h * 0.76), Offset(w * 0.84, h * 0.76),
+    ];
+    for (final c in wheelCenters) {
+      // Tyre
+      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.19, height: h * 0.125),
+          Paint()..color = const Color(0xFF0C0C0C));
+      // Rim
+      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.11, height: h * 0.073),
+          Paint()..color = const Color(0xFF3C3C3C));
+      // Spokes
+      final sp = Paint()..color = const Color(0xFF4E4E4E)..strokeWidth = 0.9..style = PaintingStyle.stroke;
+      for (int i = 0; i < 4; i++) {
+        final a = i * pi / 4;
+        canvas.drawLine(
+          c + Offset(w * 0.038 * cos(a), h * 0.025 * sin(a)),
+          c - Offset(w * 0.038 * cos(a), h * 0.025 * sin(a)),
+          sp,
+        );
+      }
+      // Hub
+      canvas.drawOval(Rect.fromCenter(center: c, width: w * 0.038, height: h * 0.025),
+          Paint()..color = const Color(0xFF1A1A1A));
+    }
+
+    // ── Roof panel ───────────────────────────────────────────────────────
+    final roofPath = Path()
+      ..moveTo(w * 0.27, h * 0.23)
+      ..lineTo(w * 0.73, h * 0.23)
+      ..quadraticBezierTo(w * 0.81, h * 0.24, w * 0.79, h * 0.33)
+      ..lineTo(w * 0.79, h * 0.66)
+      ..quadraticBezierTo(w * 0.79, h * 0.69, w * 0.73, h * 0.70)
+      ..lineTo(w * 0.27, h * 0.70)
+      ..quadraticBezierTo(w * 0.21, h * 0.69, w * 0.21, h * 0.66)
+      ..lineTo(w * 0.21, h * 0.33)
+      ..quadraticBezierTo(w * 0.19, h * 0.24, w * 0.27, h * 0.23)
+      ..close();
+    canvas.drawPath(
+      roofPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: const [Color(0xFF303030), Color(0xFF191919)],
+        ).createShader(Rect.fromLTWH(w * 0.20, h * 0.22, w * 0.60, h * 0.49)),
+    );
+
+    // ── Sunroof glass ────────────────────────────────────────────────────
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.30, h * 0.29, w * 0.40, h * 0.24), const Radius.circular(3)),
+      Paint()..color = const Color(0xFF0C1520).withValues(alpha: 0.95),
+    );
+    // Sunroof glare sliver
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.31, h * 0.295, w * 0.16, h * 0.095), const Radius.circular(2)),
+      Paint()..color = Colors.white.withValues(alpha: 0.10),
+    );
+
+    // ── Front windshield ─────────────────────────────────────────────────
+    final wsRect = Rect.fromLTWH(w * 0.24, h * 0.23, w * 0.52, h * 0.17);
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.24, h * 0.23)
+        ..lineTo(w * 0.76, h * 0.23)
+        ..lineTo(w * 0.77, h * 0.38)
+        ..lineTo(w * 0.23, h * 0.38)
+        ..close(),
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [const Color(0xFF5A8EB5).withValues(alpha: 0.90), const Color(0xFF2A5070).withValues(alpha: 0.90)],
+        ).createShader(wsRect),
+    );
+    // Windshield glare (left half brighter)
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.26, h * 0.23)
+        ..lineTo(w * 0.51, h * 0.23)
+        ..lineTo(w * 0.50, h * 0.37)
+        ..lineTo(w * 0.24, h * 0.37)
+        ..close(),
+      Paint()..color = Colors.white.withValues(alpha: 0.20),
+    );
+
+    // ── Rear window ──────────────────────────────────────────────────────
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.25, h * 0.54)
+        ..lineTo(w * 0.75, h * 0.54)
+        ..lineTo(w * 0.75, h * 0.67)
+        ..lineTo(w * 0.25, h * 0.67)
+        ..close(),
+      Paint()..color = const Color(0xFF2A4A60).withValues(alpha: 0.85),
+    );
+
+    // ── Door crease line ─────────────────────────────────────────────────
+    canvas.drawLine(
+      Offset(w * 0.13, h * 0.48), Offset(w * 0.87, h * 0.48),
+      Paint()..color = Colors.black.withValues(alpha: 0.60)..strokeWidth = 0.8,
+    );
+    // Door handles
+    for (final x in [w * 0.10, w * 0.85]) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(x, h * 0.495, w * 0.055, h * 0.020), const Radius.circular(2)),
+        Paint()..color = Colors.white.withValues(alpha: 0.18),
+      );
+    }
+
+    // ── LED Headlights ───────────────────────────────────────────────────
+    if (isOnline) {
+      // Wide LED glow
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, w, h * 0.16),
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [const Color(0xFFFFE566).withValues(alpha: 0.60), Colors.transparent],
+          ).createShader(Rect.fromLTWH(0, 0, w, h * 0.16)),
+      );
+    }
+    final hlColor = isOnline ? const Color(0xFFFFE882) : const Color(0xFF2E2E2E);
+    // Main LED bars
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.115, w * 0.23, h * 0.042), const Radius.circular(3)),
+        Paint()..color = hlColor);
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.67, h * 0.115, w * 0.23, h * 0.042), const Radius.circular(3)),
+        Paint()..color = hlColor);
+    // DRL accent strip (only online)
+    if (isOnline) {
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.156, w * 0.23, h * 0.017), const Radius.circular(1)),
+          Paint()..color = Colors.white.withValues(alpha: 0.50));
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.67, h * 0.156, w * 0.23, h * 0.017), const Radius.circular(1)),
+          Paint()..color = Colors.white.withValues(alpha: 0.50));
+    }
+
+    // ── LED Taillights (L-shaped) ────────────────────────────────────────
+    final tColor = isOnline ? const Color(0xFFFF2222) : const Color(0xFF3A1212);
+    if (isOnline) {
+      for (final cx in [w * 0.215, w * 0.785]) {
+        canvas.drawOval(
+          Rect.fromCenter(center: Offset(cx, h * 0.890), width: w * 0.28, height: h * 0.058),
+          Paint()..color = const Color(0xFFFF2222).withValues(alpha: 0.38)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+        );
+      }
+    }
+    // L-shape: horizontal bar
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.865, w * 0.21, h * 0.038), const Radius.circular(2)),
+        Paint()..color = tColor);
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.69, h * 0.865, w * 0.21, h * 0.038), const Radius.circular(2)),
+        Paint()..color = tColor);
+    // L-shape: vertical tab
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.10, h * 0.852, w * 0.07, h * 0.054), const Radius.circular(2)),
+        Paint()..color = tColor);
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(w * 0.83, h * 0.852, w * 0.07, h * 0.054), const Radius.circular(2)),
+        Paint()..color = tColor);
+
+    // ── Specular top-left highlight (metallic sheen) ──────────────────────
+    canvas.drawPath(
+      bodyPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.centerRight,
+          colors: [Colors.white.withValues(alpha: 0.11), Colors.transparent],
+          stops: const [0.0, 0.55],
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+    );
   }
 
   @override
