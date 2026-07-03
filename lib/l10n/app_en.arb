@@ -14,6 +14,7 @@
   "forgotPassword": "Forgot password?",
   "termsNotice": "By signing in, you agree to our Terms of Service and Privacy Policy.",
   "errorWrongRole": "This account is not registered as a driver.",
+  "errorInvalidCredentials": "Incorrect email or password.",
   "errorGeneric": "Something went wrong. Please try again.",
 
   "onboarding1Title": "Accept deliveries\ninstantly",

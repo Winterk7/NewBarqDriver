@@ -23,17 +23,17 @@ List<_OnboardingPageData> _buildPages(AppLocalizations l) => [
   _OnboardingPageData(
     title: l.onboarding1Title,
     subtitle: l.onboarding1Sub,
-    accent: const Color(0xFF0D9F6C),
+    accent: Colors.white,
   ),
   _OnboardingPageData(
     title: l.onboarding2Title,
     subtitle: l.onboarding2Sub,
-    accent: const Color(0xFFD97706),
+    accent: Colors.white,
   ),
   _OnboardingPageData(
     title: l.onboarding3Title,
     subtitle: l.onboarding3Sub,
-    accent: const Color(0xFF2563EB),
+    accent: Colors.white,
   ),
 ];
 
@@ -113,6 +113,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Future<void> _finish() async {
+    HapticFeedback.mediumImpact();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('driver_onboarded', true);
     if (!mounted) return;
@@ -317,22 +318,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           const SizedBox(height: AppDimens.xxl),
 
                           // CTA button
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 600),
-                            curve: Curves.easeInOut,
+                          SizedBox(
                             width: double.infinity,
                             height: AppDimens.buttonHeight,
-                            decoration: BoxDecoration(
-                              color: pages[_current].accent,
-                              borderRadius: BorderRadius.circular(
-                                  AppDimens.radiusMd),
-                            ),
                             child: ElevatedButton(
                               onPressed: _nextPage,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
+                                backgroundColor: Colors.white,
                                 shadowColor: Colors.transparent,
-                                foregroundColor: Colors.white,
+                                foregroundColor: Colors.black,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
                                     AppDimens.radiusMd,

@@ -73,10 +73,16 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward().then((_) async {
       if (!mounted) return;
       final prefs = await SharedPreferences.getInstance();
-      final onboarded = prefs.getBool('driver_onboarded') ?? false;
+      final languagePicked = prefs.getBool('driver_language_picked') ?? false;
+      final onboarded      = prefs.getBool('driver_onboarded') ?? false;
       if (!mounted) return;
-      // Router redirect will send to /home automatically if role is verified
-      context.go(onboarded ? '/login' : '/onboarding');
+      if (!languagePicked) {
+        context.go('/language-picker');
+      } else if (!onboarded) {
+        context.go('/onboarding');
+      } else {
+        context.go('/login');
+      }
     });
   }
 

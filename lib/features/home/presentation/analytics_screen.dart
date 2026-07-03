@@ -20,11 +20,24 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
   int _deliveryCount = 0;
   int _cancelledCount = 0;
   List<double> _earningsByDay = List.filled(7, 0);
+  double _totalKm = 0;
+  double _avgKm = 0;
+  double _longestKm = 0;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  static double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = (lat2 - lat1) * 3.141592653589793 / 180;
+    final dLng = (lng2 - lng1) * 3.141592653589793 / 180;
+    final a = (dLat / 2) * (dLat / 2) +
+        (lat1 * 3.141592653589793 / 180) * (lat2 * 3.141592653589793 / 180) *
+        (dLng / 2) * (dLng / 2);
+    return r * 2 * (a < 1 ? a : 1);
   }
 
   Future<void> _loadData() async {
@@ -40,7 +53,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
     try {
       final rows = await Supabase.instance.client
           .from('orders')
-          .select('status, delivery_fee, created_at')
+          .select('status, delivery_fee, created_at, delivery_lat, delivery_lng, stores(lat, lng)')
           .eq('driver_id', userId)
           .gte('created_at', since.toIso8601String())
           .order('created_at');
@@ -48,6 +61,8 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
       int delivered = 0;
       int cancelled = 0;
       final byDay = List<double>.filled(7, 0);
+      double totalKm = 0;
+      double longestKm = 0;
       for (final row in (rows as List<dynamic>)) {
         final status = row['status'] as String;
         final fee = (row['delivery_fee'] as num?)?.toDouble() ?? 0;
@@ -57,6 +72,16 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
           earnings += fee;
           delivered++;
           byDay[dayIdx] += fee;
+          final dLat = (row['delivery_lat'] as num?)?.toDouble();
+          final dLng = (row['delivery_lng'] as num?)?.toDouble();
+          final store = row['stores'] as Map?;
+          final sLat = (store?['lat'] as num?)?.toDouble();
+          final sLng = (store?['lng'] as num?)?.toDouble();
+          if (dLat != null && dLng != null && sLat != null && sLng != null) {
+            final km = _haversineKm(sLat, sLng, dLat, dLng);
+            totalKm += km;
+            if (km > longestKm) longestKm = km;
+          }
         } else if (status == 'cancelled') {
           cancelled++;
         }
@@ -67,6 +92,9 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
         _deliveryCount = delivered;
         _cancelledCount = cancelled;
         _earningsByDay = byDay;
+        _totalKm = totalKm;
+        _avgKm = delivered > 0 ? totalKm / delivered : 0;
+        _longestKm = longestKm;
       });
     } catch (_) {
       setState(() => _loadingStats = false);
@@ -446,7 +474,7 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                     child: Column(children: [
                       _KmRow(
                         label: l.totalKmDriven,
-                        value: '312 km',
+                        value: '${_totalKm.toStringAsFixed(1)} km',
                         textPrimary: textPrimary,
                         textSec: textSec,
                         divider: divider,
@@ -454,14 +482,14 @@ class _DriverAnalyticsScreenState extends State<DriverAnalyticsScreen>
                       ),
                       _KmRow(
                         label: l.avgPerDeliveryKm,
-                        value: '6.5 km',
+                        value: '${_avgKm.toStringAsFixed(1)} km',
                         textPrimary: textPrimary,
                         textSec: textSec,
                         divider: divider,
                       ),
                       _KmRow(
                         label: l.longestTrip,
-                        value: '18.2 km',
+                        value: '${_longestKm.toStringAsFixed(1)} km',
                         textPrimary: textPrimary,
                         textSec: textSec,
                         divider: divider,

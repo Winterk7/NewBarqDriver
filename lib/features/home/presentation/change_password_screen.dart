@@ -1,6 +1,7 @@
 import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:barq_driver/l10n/app_localizations.dart';
+import 'package:barq_driver/core/utils/snack_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,11 +39,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         UserAttributes(password: np),
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(l.passwordChanged),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.primaryGreen,
-        ));
+        showBarqSnack(context, l.passwordChanged, isSuccess: true);
         Navigator.pop(context);
       }
     } on AuthException catch (e) {

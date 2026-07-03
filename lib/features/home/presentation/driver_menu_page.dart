@@ -1,5 +1,7 @@
 import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
+import 'package:barq_driver/core/utils/app_haptics.dart';
+import 'package:barq_driver/core/utils/snack_helper.dart';
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/core/providers/locale_provider.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
@@ -30,6 +32,48 @@ class DriverMenuPage extends ConsumerStatefulWidget {
 }
 
 class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
+  double _earnedToday = 0;
+  int _deliveriesToday = 0;
+  double _rating = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQuickStats();
+  }
+
+  Future<void> _loadQuickStats() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day).toUtc().toIso8601String();
+    try {
+      final rows = await Supabase.instance.client
+          .from('orders')
+          .select('delivery_fee, status, driver_rating')
+          .eq('driver_id', userId)
+          .gte('created_at', startOfDay);
+      double earned = 0;
+      int count = 0;
+      double ratingSum = 0;
+      int ratingCount = 0;
+      for (final row in (rows as List).cast<Map<String, dynamic>>()) {
+        if (row['status'] == 'delivered') {
+          earned += (row['delivery_fee'] as num?)?.toDouble() ?? 0;
+          count++;
+          final r = row['driver_rating'];
+          if (r != null) { ratingSum += (r as num).toDouble(); ratingCount++; }
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _earnedToday = earned;
+          _deliveriesToday = count;
+          _rating = ratingCount > 0 ? ratingSum / ratingCount : 0;
+        });
+      }
+    } catch (_) {}
+  }
   // ── Sheet chrome ──────────────────────────────────────────────────────────
   Widget _handle(bool dark) => Center(
         child: Container(
@@ -63,7 +107,7 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
           const SizedBox(height: AppDimens.xl),
           GestureDetector(
             onTap: () async {
-              HapticFeedback.mediumImpact();
+              AppHaptics.medium();
               Navigator.pop(context);
               Navigator.pop(context); // close menu page too
               await Supabase.instance.client.auth.signOut();
@@ -112,7 +156,25 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
           Text(l.deleteAccountBody, style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: textSec)),
           const SizedBox(height: AppDimens.xl),
           GestureDetector(
-            onTap: () { HapticFeedback.mediumImpact(); Navigator.pop(context); },
+            onTap: () async {
+              AppHaptics.medium();
+              Navigator.pop(context);
+              try {
+                final userId = Supabase.instance.client.auth.currentUser?.id;
+                if (userId != null) {
+                  await Supabase.instance.client
+                      .from('profiles')
+                      .update({'deletion_requested': true})
+                      .eq('id', userId);
+                }
+                await Supabase.instance.client.auth.signOut();
+                if (context.mounted) context.go('/login');
+              } catch (_) {
+                if (context.mounted) {
+                  showBarqSnack(context, 'Could not submit deletion request. Contact support.', isError: true);
+                }
+              }
+            },
             child: Container(height: AppDimens.buttonHeight, decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(AppDimens.radiusMd)), alignment: Alignment.center,
               child: Text(l.requestDeletion, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
             ),
@@ -149,7 +211,7 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () async {
-                HapticFeedback.selectionClick();
+                AppHaptics.select();
                 await ref.read(localeProvider.notifier).setLocale(Locale(code));
                 if (ctx.mounted) Navigator.pop(ctx);
               },
@@ -227,6 +289,7 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
       String? value,
       Widget? trailing,
       Color? iconColor,
+      Color? labelColor,
       VoidCallback? onTap,
       bool isFirst = false,
       bool isLast = false,
@@ -249,7 +312,7 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
               child: Icon(icon, size: 16, color: ic),
             ),
             const SizedBox(width: AppDimens.md),
-            Expanded(child: Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w500, color: textPrimary))),
+            Expanded(child: Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w500, color: labelColor ?? textPrimary))),
             if (value != null) ...[const SizedBox(width: AppDimens.sm), Text(value, style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: textSec)), const SizedBox(width: 4)],
             trailing ?? Icon(Icons.chevron_right_rounded, size: 18, color: textSec.withValues(alpha: 0.50)),
           ]),
@@ -269,7 +332,7 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
       final icons  = {ThemeMode.system: Icons.brightness_auto_rounded, ThemeMode.light: Icons.light_mode_rounded, ThemeMode.dark: Icons.dark_mode_rounded};
       return GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          AppHaptics.select();
           final next = themeMode == ThemeMode.system ? ThemeMode.light : themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.system;
           ref.read(themeModeProvider.notifier).setTheme(next);
         },
@@ -337,11 +400,11 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
                 // ── Quick stats ──────────────────────────────────────────
                 const SizedBox(height: AppDimens.base),
                 Row(children: [
-                  _QuickStat(label: l.earnedToday, value: 'LYD 0.00', icon: Icons.account_balance_wallet_rounded, dark: dark, cardBg: cardBg, textPrimary: textPrimary, textSec: textSec, borderColor: borderColor),
+                  _QuickStat(label: l.earnedToday, value: 'LYD ${_earnedToday.toStringAsFixed(2)}', icon: Icons.account_balance_wallet_rounded, dark: dark, cardBg: cardBg, textPrimary: textPrimary, textSec: textSec, borderColor: borderColor),
                   const SizedBox(width: AppDimens.sm),
-                  _QuickStat(label: l.deliveries, value: '0', icon: Icons.delivery_dining_rounded, dark: dark, cardBg: cardBg, textPrimary: textPrimary, textSec: textSec, borderColor: borderColor),
+                  _QuickStat(label: l.deliveries, value: '$_deliveriesToday', icon: Icons.delivery_dining_rounded, dark: dark, cardBg: cardBg, textPrimary: textPrimary, textSec: textSec, borderColor: borderColor),
                   const SizedBox(width: AppDimens.sm),
-                  _QuickStat(label: l.rating, value: '4.9 ★', icon: Icons.star_rounded, dark: dark, cardBg: cardBg, textPrimary: textPrimary, textSec: textSec, borderColor: borderColor),
+                  _QuickStat(label: l.rating, value: _rating > 0 ? '${_rating.toStringAsFixed(1)} ★' : '—', icon: Icons.star_rounded, dark: dark, cardBg: cardBg, textPrimary: textPrimary, textSec: textSec, borderColor: borderColor),
                 ]),
 
                 // ── Driver ───────────────────────────────────────────────
@@ -368,7 +431,7 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
                     label: l.appearance,
                     trailing: appearancePill(),
                     onTap: () {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.select();
                       final next = themeMode == ThemeMode.system ? ThemeMode.light : themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.system;
                       ref.read(themeModeProvider.notifier).setTheme(next);
                     },
@@ -405,36 +468,32 @@ class _DriverMenuPageState extends ConsumerState<DriverMenuPage> {
                 const SizedBox(height: AppDimens.xl),
 
                 // ── Log out ──────────────────────────────────────────────
-                GestureDetector(
-                  onTap: () => _showLogoutSheet(context, dark),
-                  child: Container(
-                    height: AppDimens.buttonHeight,
-                    decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(AppDimens.radiusMd), border: Border.all(color: AppColors.error.withValues(alpha: 0.20))),
-                    alignment: Alignment.center,
-                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
-                      const SizedBox(width: 8),
-                      Text(l.logOut, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.error)),
-                    ]),
+                settingsCard([
+                  settingsRow(
+                    icon: Icons.logout_rounded,
+                    label: l.logOut,
+                    iconColor: AppColors.error,
+                    labelColor: AppColors.error,
+                    isFirst: true,
+                    isLast: true,
+                    onTap: () => _showLogoutSheet(context, dark),
                   ),
-                ),
+                ]),
 
                 const SizedBox(height: AppDimens.sm),
 
                 // ── Delete account ────────────────────────────────────────
-                GestureDetector(
-                  onTap: () => _showDeleteSheet(context, dark),
-                  child: Container(
-                    height: AppDimens.buttonHeight,
-                    decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(AppDimens.radiusMd), border: Border.all(color: AppColors.error.withValues(alpha: 0.30))),
-                    alignment: Alignment.center,
-                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(Icons.delete_forever_rounded, size: 18, color: AppColors.error),
-                      const SizedBox(width: 8),
-                      Text(l.requestDeletion, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.error)),
-                    ]),
+                settingsCard([
+                  settingsRow(
+                    icon: Icons.delete_forever_rounded,
+                    label: l.requestDeletion,
+                    iconColor: AppColors.error,
+                    labelColor: AppColors.error,
+                    isFirst: true,
+                    isLast: true,
+                    onTap: () => _showDeleteSheet(context, dark),
                   ),
-                ),
+                ]),
 
                 const SizedBox(height: AppDimens.lg),
                 Center(child: Text('Barq Driver v1.0.0', style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: textSec.withValues(alpha: 0.50)))),

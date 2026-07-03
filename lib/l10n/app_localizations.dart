@@ -167,6 +167,12 @@ abstract class AppLocalizations {
   /// **'This account is not registered as a driver.'**
   String get errorWrongRole;
 
+  /// No description provided for @errorInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect email or password.'**
+  String get errorInvalidCredentials;
+
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:

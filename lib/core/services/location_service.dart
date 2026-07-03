@@ -1,7 +1,7 @@
 // lib/core/services/location_service.dart
 //
 // Publishes the driver's GPS position to the `driver_locations` Supabase table
-// every 10 seconds while they are online or on delivery.
+// every 5 seconds while they are online or on delivery.
 // Clears the row when the driver goes offline.
 
 import 'dart:async';
@@ -32,7 +32,7 @@ class LocationService {
     if (!granted) return;
     _running = true;
     await _publish(); // first tick immediately
-    _timer = Timer.periodic(const Duration(seconds: 10), (_) => _publish());
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _publish());
   }
 
   // ── Stop publishing and remove the row ──────────────────────────────────

@@ -35,4 +35,16 @@ class AppDimens {
   static const double appBarHeight = 56;
   static const double bottomNavHeight = 80;
   static const double cardMinHeight = 80;
+
+  // ── Font Sizes ────────────────────────────────────────
+  static const double textXs   = 11;
+  static const double textSm   = 12;
+  static const double textMd   = 13;
+  static const double textBase = 14;
+  static const double textLg   = 15;
+  static const double textXl   = 16;
+  static const double textXxl  = 18;
+  static const double textH3   = 20;
+  static const double textH2   = 24;
+  static const double textH1   = 28;
 }

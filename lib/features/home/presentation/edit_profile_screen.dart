@@ -2,6 +2,7 @@ import 'package:barq_driver/core/constants/app_colors.dart';
 import 'package:barq_driver/core/constants/app_dimens.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
 import 'package:barq_driver/l10n/app_localizations.dart';
+import 'package:barq_driver/core/utils/snack_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,13 +62,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       // Invalidate cached profile so menu page reflects the change.
       ref.invalidate(driverProfileProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l.profileUpdated),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.primaryGreen,
-          ),
-        );
+        showBarqSnack(context, l.profileUpdated, isSuccess: true);
         Navigator.pop(context);
       }
     } catch (e) {
