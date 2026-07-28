@@ -315,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen>
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const NeverScrollableScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(
                           AppDimens.xl, 0, AppDimens.xl,
                           bottomPadding + AppDimens.xl),
