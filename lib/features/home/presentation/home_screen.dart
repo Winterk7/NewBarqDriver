@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:barq_driver/core/theme/theme_provider.dart';
 import 'package:barq_driver/core/providers/driver_orders_provider.dart';
 import 'package:barq_driver/core/services/location_service.dart';
@@ -46,8 +47,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _mapReady = false;
   DriverStatus _status = DriverStatus.offline;
   DriverOrder? _activeOrder;
+  DriverOrder? _pendingOrder; // order waiting for driver accept/reject
   LatLng? _currentPosition;
   StreamSubscription<Position>? _positionSub;
+  bool _incomingSheetOpen = false;
 
   // Bottom sheet animation
   late final AnimationController _sheetCtrl;
@@ -97,6 +100,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // accessing it during Flutter's framework teardown.
     super.dispose();
     _mapCtrl.dispose();
+  }
+
+  // ── Incoming order sheet ──────────────────────────────────────────────────
+  void _showIncomingOrderSheet(DriverOrder order) {
+    if (_incomingSheetOpen) return;
+    _incomingSheetOpen = true;
+    setState(() => _pendingOrder = order);
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      useRootNavigator: true,
+      builder: (_) => _IncomingOrderSheet(
+        order: order,
+        onAccept: () {
+          _incomingSheetOpen = false;
+          setState(() {
+            _pendingOrder = null;
+            _activeOrder = order;
+            _status = DriverStatus.onDelivery;
+          });
+          _sheetCtrl..reset()..forward();
+        },
+        onReject: () {
+          _incomingSheetOpen = false;
+          setState(() => _pendingOrder = null);
+          // Unassign from Supabase so partner can reassign
+          Supabase.instance.client
+              .from('orders')
+              .update({'driver_id': null, 'status': 'ready'})
+              .eq('id', order.id)
+              .ignore();
+        },
+      ),
+    ).whenComplete(() => _incomingSheetOpen = false);
   }
 
   // ── Status toggle ─────────────────────────────────────────────────────────
@@ -177,40 +217,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final tileStyle = appIsDark ? 'dark-v11' : 'streets-v12';
 
     // ── Live order listener ────────────────────────────────────────────────
-    // React to Supabase realtime: when an order is assigned/updated react here.
     ref.listen<AsyncValue<DriverOrder?>>(driverActiveOrderProvider, (_, next) {
       next.whenData((order) {
         if (!mounted) return;
         if (order != null && _status != DriverStatus.offline) {
-          // New or updated active order
-          if (_activeOrder?.id != order.id ||
-              _activeOrder?.status != order.status ||
-              _status != DriverStatus.onDelivery) {
-            // Notify driver only on a brand-new assignment.
-            final isNewOrder = _activeOrder?.id != order.id;
-            setState(() {
-              _activeOrder = order;
-              _status = DriverStatus.onDelivery;
-            });
-            if (isNewOrder) {
-              NotificationService.showNewOrder(order.storeName);
-            }
-            _sheetCtrl
-              ..reset()
-              ..forward();
-          } else {
-            // Update status silently (e.g. accepted → picked_up)
+          final isNewOrder = _activeOrder?.id != order.id;
+          if (isNewOrder && !_incomingSheetOpen) {
+            // Brand new assignment — show accept/reject sheet
+            NotificationService.showNewOrder(order.storeName);
+            _showIncomingOrderSheet(order);
+          } else if (!isNewOrder) {
+            // Status update on existing order (e.g. accepted → picked_up)
             setState(() => _activeOrder = order);
           }
         } else if (order == null && _status == DriverStatus.onDelivery) {
-          // Order completed or unassigned
           setState(() {
             _activeOrder = null;
             _status = DriverStatus.online;
           });
-          _sheetCtrl
-            ..reset()
-            ..forward();
+          _sheetCtrl..reset()..forward();
         }
       });
     });
@@ -1333,6 +1358,247 @@ class _RouteRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Incoming order sheet ───────────────────────────────────────────────────────
+// Shows when a new order is assigned. Driver has 30 seconds to accept or reject.
+class _IncomingOrderSheet extends StatefulWidget {
+  final DriverOrder order;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  const _IncomingOrderSheet({
+    required this.order,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  @override
+  State<_IncomingOrderSheet> createState() => _IncomingOrderSheetState();
+}
+
+class _IncomingOrderSheetState extends State<_IncomingOrderSheet> {
+  static const _kCountdown = 30;
+  int _seconds = _kCountdown;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    HapticFeedback.heavyImpact();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _seconds--);
+      if (_seconds <= 0) _autoReject();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _autoReject() {
+    _timer?.cancel();
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+    widget.onReject();
+  }
+
+  void _accept() {
+    _timer?.cancel();
+    HapticFeedback.mediumImpact();
+    Navigator.of(context, rootNavigator: true).pop();
+    widget.onAccept();
+  }
+
+  void _reject() {
+    _timer?.cancel();
+    HapticFeedback.lightImpact();
+    Navigator.of(context, rootNavigator: true).pop();
+    widget.onReject();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fontFamily = Localizations.localeOf(context).languageCode == 'ar' ? 'Cairo' : 'Inter';
+    final bg = isDark ? AppColors.sheetDark : Colors.white;
+    final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.contentTextPrimaryLight;
+    final textSecondary = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final progress = _seconds / _kCountdown;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppDimens.radiusXxl)),
+        border: isDark ? Border.all(color: Colors.white.withValues(alpha: 0.10)) : null,
+      ),
+      padding: EdgeInsets.fromLTRB(AppDimens.xl, AppDimens.lg, AppDimens.xl, bottomPad + AppDimens.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              margin: const EdgeInsets.only(bottom: AppDimens.lg),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.20) : Colors.black.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+              ),
+            ),
+          ),
+
+          // Countdown ring + title row
+          Row(
+            children: [
+              // Circular countdown
+              SizedBox(
+                width: 52, height: 52,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 3,
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.black.withValues(alpha: 0.08),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        _seconds > 10 ? AppColors.primaryGreen : AppColors.error,
+                      ),
+                    ),
+                    Text(
+                      '$_seconds',
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: AppDimens.textXl,
+                        fontWeight: FontWeight.w800,
+                        color: _seconds > 10 ? AppColors.primaryGreen : AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppDimens.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'طلب جديد!',
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: AppDimens.textXxl,
+                        fontWeight: FontWeight.w800,
+                        color: textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    Text(
+                      widget.order.storeName,
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: AppDimens.textBase,
+                        color: textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Earnings badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppDimens.sm, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+                ),
+                child: Text(
+                  'LYD ${widget.order.earnings.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: AppDimens.textMd,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppDimens.lg),
+
+          // Route row
+          Row(
+            children: [
+              Column(
+                children: [
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.warning, shape: BoxShape.circle)),
+                  Container(width: 2, height: 28, color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.10)),
+                  Container(width: 8, height: 8, decoration: BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle)),
+                ],
+              ),
+              const SizedBox(width: AppDimens.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.order.storeName,
+                        style: TextStyle(fontFamily: fontFamily, fontSize: AppDimens.textBase, fontWeight: FontWeight.w600, color: textPrimary)),
+                    const SizedBox(height: AppDimens.md),
+                    Text(widget.order.dropoffAddress.isNotEmpty ? widget.order.dropoffAddress : 'Customer address',
+                        style: TextStyle(fontFamily: fontFamily, fontSize: AppDimens.textMd, color: textSecondary),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppDimens.xl),
+
+          // Accept / Reject buttons
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: _reject,
+                  child: Container(
+                    height: AppDimens.buttonHeight,
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text('رفض', style: TextStyle(fontFamily: fontFamily, fontSize: AppDimens.textLg, fontWeight: FontWeight.w700, color: AppColors.error)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppDimens.md),
+              Expanded(
+                flex: 2,
+                child: GestureDetector(
+                  onTap: _accept,
+                  child: Container(
+                    height: AppDimens.buttonHeight,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen,
+                      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text('قبول', style: TextStyle(fontFamily: fontFamily, fontSize: AppDimens.textLg, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
