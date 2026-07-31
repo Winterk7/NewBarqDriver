@@ -1559,6 +1559,56 @@ class _IncomingOrderSheetState extends State<_IncomingOrderSheet> {
             ],
           ),
 
+          // Items list
+          if (widget.order.items.isNotEmpty) ...[
+            const SizedBox(height: AppDimens.lg),
+            Container(
+              padding: const EdgeInsets.all(AppDimens.md),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+              ),
+              child: Column(
+                children: widget.order.items.map((item) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Text('${item.quantity}×',
+                            style: TextStyle(
+                                fontFamily: fontFamily,
+                                fontSize: AppDimens.textSm,
+                                fontWeight: FontWeight.w700,
+                                color: textSecondary)),
+                        const SizedBox(width: AppDimens.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.name,
+                                  style: TextStyle(
+                                      fontFamily: fontFamily,
+                                      fontSize: AppDimens.textMd,
+                                      color: textPrimary)),
+                              if (item.unitPrice > 0)
+                                Text('${item.unitPrice.toStringAsFixed(2)} LYD',
+                                    style: TextStyle(
+                                        fontFamily: fontFamily,
+                                        fontSize: AppDimens.textXs,
+                                        color: textSecondary)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+
           const SizedBox(height: AppDimens.xl),
 
           // Accept / Reject buttons
@@ -1587,11 +1637,11 @@ class _IncomingOrderSheetState extends State<_IncomingOrderSheet> {
                   child: Container(
                     height: AppDimens.buttonHeight,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryGreen,
+                      color: isDark ? Colors.white : Colors.black,
                       borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                     ),
                     alignment: Alignment.center,
-                    child: Text('قبول', style: TextStyle(fontFamily: fontFamily, fontSize: AppDimens.textLg, fontWeight: FontWeight.w700, color: Colors.white)),
+                    child: Text('قبول', style: TextStyle(fontFamily: fontFamily, fontSize: AppDimens.textLg, fontWeight: FontWeight.w700, color: isDark ? Colors.black : Colors.white)),
                   ),
                 ),
               ),
