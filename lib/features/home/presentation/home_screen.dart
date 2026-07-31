@@ -1201,13 +1201,28 @@ class _DeliverySheetState extends State<_DeliverySheet> {
                       ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(
-                          item.name,
-                          style: TextStyle(
-                            fontFamily: fontFamily,
-                            fontSize: 12,
-                            color: cs.onSurface.withValues(alpha: 0.7),
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: TextStyle(
+                                fontFamily: fontFamily,
+                                fontSize: 12,
+                                color: cs.onSurface.withValues(alpha: 0.7),
+                              ),
+                            ),
+                            if (item.note != null && item.note!.isNotEmpty)
+                              Text(
+                                '📝 ${item.note}',
+                                style: TextStyle(
+                                  fontFamily: fontFamily,
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                  color: cs.onSurface.withValues(alpha: 0.50),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                       Text(
@@ -1592,6 +1607,13 @@ class _IncomingOrderSheetState extends State<_IncomingOrderSheet> {
                                       fontFamily: fontFamily,
                                       fontSize: AppDimens.textMd,
                                       color: textPrimary)),
+                              if (item.note != null && item.note!.isNotEmpty)
+                                Text('📝 ${item.note}',
+                                    style: TextStyle(
+                                        fontFamily: fontFamily,
+                                        fontSize: AppDimens.textXs,
+                                        color: textSecondary,
+                                        fontStyle: FontStyle.italic)),
                               if (item.unitPrice > 0)
                                 Text('${item.unitPrice.toStringAsFixed(2)} LYD',
                                     style: TextStyle(

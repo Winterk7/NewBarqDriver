@@ -7,11 +7,13 @@ class DriverOrderItem {
   final String name;
   final int quantity;
   final double unitPrice;
+  final String? note;
 
   const DriverOrderItem({
     required this.name,
     required this.quantity,
     required this.unitPrice,
+    this.note,
   });
 
   factory DriverOrderItem.fromRow(Map<String, dynamic> row) {
@@ -19,6 +21,7 @@ class DriverOrderItem {
       name: row['product_name'] as String? ?? '',
       quantity: (row['quantity'] as num?)?.toInt() ?? 1,
       unitPrice: (row['unit_price'] as num?)?.toDouble() ?? 0.0,
+      note: row['note'] as String?,
     );
   }
 }
